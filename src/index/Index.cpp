@@ -131,12 +131,12 @@ bool Index::write(PostingMap map) {
   // Open files for writing.
   QDir dir = indexDir();
   QSaveFile idFile(dir.filePath(kIdFile));
-  QSaveFile postFile(dir.filePath(kPostFile));
-  QSaveFile proxFile(dir.filePath(kProxFile));
+  BufferedWriter postFile(dir.filePath(kPostFile));
+  BufferedWriter proxFile(dir.filePath(kProxFile));
   QSaveFile dictFile(dir.filePath(kDictFile));
   if (!idFile.open(QIODevice::WriteOnly) ||
-      !postFile.open(QIODevice::WriteOnly) ||
-      !proxFile.open(QIODevice::WriteOnly) ||
+      !postFile.open() ||
+      !proxFile.open() ||
       !dictFile.open(QIODevice::WriteOnly))
     return false;
 
@@ -146,8 +146,6 @@ bool Index::write(PostingMap map) {
 
   // Merge new entries into existing postings file.
   // Write dictionary and postings files in lockstep.
-  QDataStream postOut(&postFile);
-  QDataStream proxOut(&proxFile);
   QDataStream dictOut(&dictFile);
 
   // Open existing postings file.
@@ -208,12 +206,12 @@ bool Index::write(PostingMap map) {
     dictOut << key << postPos;
 
     // Write postings.
-    writeVInt(postOut, postings.size());
+    postFile.writeVInt(postings.size());
     foreach (const Posting &posting, postings) {
       quint32 proxPos = proxFile.pos(); // truncate
-      writeVInt(postOut, posting.id);
-      postOut << posting.field << proxPos;
-      writePositions(proxOut, posting.positions);
+      postFile.writeVInt(posting.id);
+      postFile << posting.field << proxPos;
+      writePositions(proxFile, posting.positions);
     }
   }
 
@@ -492,19 +490,6 @@ quint32 Index::readVInt(QDataStream &in) {
   return result;
 }
 
-void Index::writeVInt(QDataStream &out, quint32 arg) {
-  // Write less significant bytes first.
-  // Most significant bit is set.
-  while (arg & ~0x7F) {
-    out << static_cast<quint8>((arg & 0x7F) | 0x80);
-    arg >>= 7;
-  }
-
-  // Write most significant byte last.
-  // Most significant bit is unset.
-  out << static_cast<quint8>(arg);
-}
-
 // Write deltas to minimize bytes per position.
 void Index::readPositions(QDataStream &in, QVector<quint32> &positions) {
   quint32 prev = 0;
@@ -518,14 +503,14 @@ void Index::readPositions(QDataStream &in, QVector<quint32> &positions) {
   }
 }
 
-void Index::writePositions(QDataStream &out,
+void Index::writePositions(BufferedWriter &out,
                            const QVector<quint32> &positions) {
   quint32 prev = 0;
-  writeVInt(out, positions.size());
+  out.writeVInt(positions.size());
   foreach (quint32 position, positions) {
     // Convert to delta from absolute.
     quint32 delta = position - prev;
-    writeVInt(out, delta);
+    out.writeVInt(delta);
     prev = position;
   }
 }

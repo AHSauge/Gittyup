@@ -12,6 +12,7 @@
 
 #include "git/Id.h"
 #include "git/Repository.h"
+#include "BufferedWriter.h"
 #include <QList>
 #include <QObject>
 #include <QVector>
@@ -114,11 +115,10 @@ public:
 
   // vint
   static quint32 readVInt(QDataStream &in);
-  static void writeVInt(QDataStream &out, quint32 arg);
 
   // positions
   static void readPositions(QDataStream &in, QVector<quint32> &positions);
-  static void writePositions(QDataStream &out,
+  static void writePositions(BufferedWriter &out,
                              const QVector<quint32> &positions);
 
   // Enable logging. The log is written to the index dir.
