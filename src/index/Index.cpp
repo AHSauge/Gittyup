@@ -133,20 +133,16 @@ bool Index::write(PostingMap map) {
   QSaveFile idFile(dir.filePath(kIdFile));
   BufferedWriter postFile(dir.filePath(kPostFile));
   BufferedWriter proxFile(dir.filePath(kProxFile));
-  QSaveFile dictFile(dir.filePath(kDictFile));
+  BufferedWriter dictFile(dir.filePath(kDictFile));
   if (!idFile.open(QIODevice::WriteOnly) ||
       !postFile.open() ||
       !proxFile.open() ||
-      !dictFile.open(QIODevice::WriteOnly))
+      !dictFile.open())
     return false;
 
   // Write id file.
   foreach (const git::Id &id, mIds)
     idFile.write(id.toByteArray(), GIT_OID_SHA1);
-
-  // Merge new entries into existing postings file.
-  // Write dictionary and postings files in lockstep.
-  QDataStream dictOut(&dictFile);
 
   // Open existing postings file.
   QDataStream postIn;
@@ -203,7 +199,7 @@ bool Index::write(PostingMap map) {
     // Write dictionary.
     quint32 postPos = postFile.pos(); // truncate
     mDict.append(Word(key, postPos));
-    dictOut << key << postPos;
+    dictFile << key << postPos;
 
     // Write postings.
     postFile.writeVInt(postings.size());
