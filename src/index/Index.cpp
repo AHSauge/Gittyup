@@ -151,15 +151,11 @@ bool Index::write(PostingMap map) {
   QDataStream dictOut(&dictFile);
 
   // Open existing postings file.
-  QDataStream postIn;
-  QFile postInFile(dir.filePath(kPostFile));
-  if (postInFile.open(QIODevice::ReadOnly))
-    postIn.setDevice(&postInFile);
+  MmapFileReader postIn(dir.filePath(kPostFile));
+  postIn.open();
 
-  QDataStream proxIn;
-  QFile proxInFile(dir.filePath(kProxFile));
-  if (proxInFile.open(QIODevice::ReadOnly))
-    proxIn.setDevice(&proxInFile);
+  MmapFileReader proxIn(dir.filePath(kProxFile));
+  proxIn.open();
 
   // Create a copy of the existing dictionary.
   Dictionary dict = mDict;
@@ -181,13 +177,13 @@ bool Index::write(PostingMap map) {
     } else {
       // Read existing postings.
       key = it->key;
-      quint32 postCount = readVInt(postIn);
+      quint32 postCount = postIn.readVInt();
       bool end = (newIt == newEnd || newIt.key() != it->key);
       postings.reserve(postCount + (!end ? newIt.value().size() : 0));
       for (quint32 i = 0; i < postCount; ++i) {
         quint32 proxPos;
         Posting posting;
-        posting.id = readVInt(postIn);
+        posting.id = postIn.readVInt();
         postIn >> posting.field >> proxPos;
         readPositions(proxIn, posting.positions);
         postings.append(posting);
@@ -218,8 +214,8 @@ bool Index::write(PostingMap map) {
   }
 
   // Close in files.
-  postInFile.close();
-  proxInFile.close();
+  //postInFile.close();
+  //proxInFile.close();
 
   // Write out files.
   postFile.commit();
@@ -272,29 +268,28 @@ QList<Index::Posting> Index::postings(const Term &term, bool positional) const {
     return QList<Posting>();
 
   QDir dir = indexDir();
-  QFile file(dir.filePath(kPostFile));
-  if (!file.open(QIODevice::ReadOnly))
+  MmapFileReader file(dir.filePath(kPostFile));
+  if (!file.open())
     return QList<Posting>();
 
-  QFile proxFile;
+  MmapFileReader proxFile(dir.filePath(kProxFile));
   if (positional) {
-    proxFile.setFileName(dir.filePath(kProxFile));
-    if (!proxFile.open(QIODevice::ReadOnly))
+    if (!proxFile.open())
       return QList<Posting>();
   }
 
   // Skip to the correct entry.
   file.seek(it->value);
-  QDataStream in(&file);
 
   // Read list.
   QList<Posting> postings;
-  quint32 postCount = readVInt(in);
+  quint32 postCount = file.readVInt();
   for (quint32 i = 0; i < postCount; ++i) {
     quint32 proxPos;
     Posting posting;
-    posting.id = readVInt(in);
-    in >> posting.field >> proxPos;
+    posting.id = file.readVInt();
+    
+    file >> posting.field >> proxPos;
 
     // Filter by field.
     quint8 field = posting.field & 0x0F;
@@ -303,8 +298,7 @@ QList<Index::Posting> Index::postings(const Term &term, bool positional) const {
       // Load positions when needed.
       if (positional) {
         proxFile.seek(proxPos);
-        QDataStream proxIn(&proxFile);
-        readPositions(proxIn, posting.positions);
+        readPositions(proxFile, posting.positions);
       }
 
       postings.append(posting);
@@ -317,8 +311,8 @@ QList<Index::Posting> Index::postings(const Term &term, bool positional) const {
 QList<Index::Posting> Index::postings(const Predicate &pred,
                                       Field field) const {
   QDir dir = indexDir();
-  QFile file(dir.filePath(kPostFile));
-  if (!file.open(QIODevice::ReadOnly))
+  MmapFileReader file(dir.filePath(kPostFile));
+  if (!file.open())
     return QList<Posting>();
 
   QList<Posting> postings;
@@ -329,15 +323,14 @@ QList<Index::Posting> Index::postings(const Predicate &pred,
 
     // Skip to the correct entry.
     file.seek(word.value);
-    QDataStream in(&file);
 
     // Read list.
-    quint32 postCount = readVInt(in);
+    quint32 postCount = file.readVInt();
     for (quint32 i = 0; i < postCount; ++i) {
       quint32 proxPos;
       Posting posting;
-      posting.id = readVInt(in);
-      in >> posting.field >> proxPos;
+      posting.id = file.readVInt();
+      file >> posting.field >> proxPos;
 
       // Match field.
       quint8 postField = posting.field & 0x0F;
@@ -352,8 +345,8 @@ QList<Index::Posting> Index::postings(const Predicate &pred,
 
 QMap<Index::Field, QStringList> Index::fieldMap(const QString &prefix) const {
   QDir dir = indexDir();
-  QFile file(dir.filePath(kPostFile));
-  if (!file.open(QIODevice::ReadOnly))
+  MmapFileReader file(dir.filePath(kPostFile));
+  if (!file.open())
     return QMap<Field, QStringList>();
 
   Dictionary::const_iterator it = mDict.constBegin();
@@ -370,16 +363,15 @@ QMap<Index::Field, QStringList> Index::fieldMap(const QString &prefix) const {
   while (it != end) {
     // Skip to the correct entry.
     file.seek(it->value);
-    QDataStream in(&file);
 
     // Read list.
     QString name = it->key;
-    quint32 postCount = readVInt(in);
+    quint32 postCount = file.readVInt();
     for (quint32 i = 0; i < postCount; ++i) {
       quint8 field;
       quint32 proxPos;
-      readVInt(in); // Discard id.
-      in >> field >> proxPos;
+      file.readVInt(); // Discard id.
+      file >> field >> proxPos;
 
       QStringList &fieldList = map[static_cast<Field>(field & 0x0F)];
       if (fieldList.isEmpty() || fieldList.last() != name)
@@ -476,22 +468,6 @@ void Index::writeVersion() const {
     QDataStream(&file) << version();
 }
 
-// Use the same variable length VInt encoding as Lucene.
-quint32 Index::readVInt(QDataStream &in) {
-  // Read least significant byte.
-  quint8 byte;
-  in >> byte;
-  quint32 result = byte & 0x7F;
-
-  // Continue reading more significant bytes.
-  for (quint32 shift = 7; byte & 0x80; shift += 7) {
-    in >> byte;
-    result |= (byte & 0x7F) << shift;
-  }
-
-  return result;
-}
-
 void Index::writeVInt(QDataStream &out, quint32 arg) {
   // Write less significant bytes first.
   // Most significant bit is set.
@@ -506,13 +482,13 @@ void Index::writeVInt(QDataStream &out, quint32 arg) {
 }
 
 // Write deltas to minimize bytes per position.
-void Index::readPositions(QDataStream &in, QVector<quint32> &positions) {
+void Index::readPositions(MmapFileReader &in, QVector<quint32> &positions) {
   quint32 prev = 0;
-  quint32 count = readVInt(in);
+  quint32 count = in.readVInt();
   positions.reserve(count);
   for (quint32 i = 0; i < count; ++i) {
     // Convert to absolute from delta.
-    quint32 position = prev + readVInt(in);
+    quint32 position = prev + in.readVInt();
     positions.append(position);
     prev = position;
   }
