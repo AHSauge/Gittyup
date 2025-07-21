@@ -19,7 +19,7 @@ BufferedWriter::~BufferedWriter()
 
 bool BufferedWriter::open()
 {
-    return file.open(QIODevice::WriteOnly | QIODevice::Truncate);
+    return file.open(QIODevice::WriteOnly);
 }
 
 bool BufferedWriter::commit()
