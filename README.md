@@ -1,3 +1,5 @@
+**NOTE**: This branch shouldn't be upstreamed. It's my test branch trialing out various fixes. Any fixes should be cherrypicked out for upstreaming
+
 [![Gittyup Status](https://github.com/Murmele/Gittyup/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/Murmele/Gittyup/actions/workflows/build.yml)
 [![Matrix](https://img.shields.io/matrix/Gittyup:matrix.org?label=Matrix%20Chat)](https://matrix.to/#/#Gittyup:matrix.org)
 [![Donate Liberapay](https://liberapay.com/assets/widgets/donate.svg)](https://liberapay.com/Gittyup/donate)
@@ -25,15 +27,20 @@ Gittyup is a continuation of the [GitAhead](https://github.com/gitahead/gitahead
 Table of contents
 =================
 <!--ts-->
-   * [Features](#features)
-   * [How to Get Help](#how-to-get-help)
-   * [Build Environment](#build-environment)
-   * [Dependencies](#dependencies)
-   * [How to Build](#how-to-build)
-   * [How to Install](#how-to-install)
-      * [Flatpak from terminal](#flatpak-from-terminal)
-   * [How to Contribute](#how-to-contribute)
-   * [License](#license)
+- [Gittyup](#gittyup)
+- [Table of contents](#table-of-contents)
+  - [Features](#features)
+  - [How to Get Help](#how-to-get-help)
+  - [Build Environment](#build-environment)
+  - [Dependencies](#dependencies)
+  - [How to Build](#how-to-build)
+    - [A Convenient Shell Script for Ubuntu is available here, and will install all the necessary prerequisites, and build a release version for immediate use.](#a-convenient-shell-script-for-ubuntu-is-available-here-and-will-install-all-the-necessary-prerequisites-and-build-a-release-version-for-immediate-use)
+  - [How to Install](#how-to-install)
+    - [Linux](#linux)
+    - [Mac OS](#mac-os)
+    - [Flatpak from terminal](#flatpak-from-terminal)
+  - [How to Contribute](#how-to-contribute)
+  - [License](#license)
 <!--te-->
 
 Features
