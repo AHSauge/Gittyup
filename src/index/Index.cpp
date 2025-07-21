@@ -131,24 +131,18 @@ bool Index::write(PostingMap map) {
   // Open files for writing.
   QDir dir = indexDir();
   QSaveFile idFile(dir.filePath(kIdFile));
-  QSaveFile postFile(dir.filePath(kPostFile));
-  QSaveFile proxFile(dir.filePath(kProxFile));
-  QSaveFile dictFile(dir.filePath(kDictFile));
+  BufferedWriter postFile(dir.filePath(kPostFile));
+  BufferedWriter proxFile(dir.filePath(kProxFile));
+  BufferedWriter dictFile(dir.filePath(kDictFile));
   if (!idFile.open(QIODevice::WriteOnly) ||
-      !postFile.open(QIODevice::WriteOnly) ||
-      !proxFile.open(QIODevice::WriteOnly) ||
-      !dictFile.open(QIODevice::WriteOnly))
+      !postFile.open() ||
+      !proxFile.open() ||
+      !dictFile.open())
     return false;
 
   // Write id file.
   foreach (const git::Id &id, mIds)
     idFile.write(id.toByteArray(), GIT_OID_SHA1_SIZE);
-
-  // Merge new entries into existing postings file.
-  // Write dictionary and postings files in lockstep.
-  QDataStream postOut(&postFile);
-  QDataStream proxOut(&proxFile);
-  QDataStream dictOut(&dictFile);
 
   // Open existing postings file.
   MmapFileReader postIn(dir.filePath(kPostFile));
@@ -201,15 +195,15 @@ bool Index::write(PostingMap map) {
     // Write dictionary.
     quint32 postPos = postFile.pos(); // truncate
     mDict.append(Word(key, postPos));
-    dictOut << key << postPos;
+    dictFile << key << postPos;
 
     // Write postings.
-    writeVInt(postOut, postings.size());
+    postFile.writeVInt(postings.size());
     foreach (const Posting &posting, postings) {
       quint32 proxPos = proxFile.pos(); // truncate
-      writeVInt(postOut, posting.id);
-      postOut << posting.field << proxPos;
-      writePositions(proxOut, posting.positions);
+      postFile.writeVInt(posting.id);
+      postFile << posting.field << proxPos;
+      writePositions(proxFile, posting.positions);
     }
   }
 
@@ -468,19 +462,6 @@ void Index::writeVersion() const {
     QDataStream(&file) << version();
 }
 
-void Index::writeVInt(QDataStream &out, quint32 arg) {
-  // Write less significant bytes first.
-  // Most significant bit is set.
-  while (arg & ~0x7F) {
-    out << static_cast<quint8>((arg & 0x7F) | 0x80);
-    arg >>= 7;
-  }
-
-  // Write most significant byte last.
-  // Most significant bit is unset.
-  out << static_cast<quint8>(arg);
-}
-
 // Write deltas to minimize bytes per position.
 void Index::readPositions(MmapFileReader &in, QVector<quint32> &positions) {
   quint32 prev = 0;
@@ -494,14 +475,14 @@ void Index::readPositions(MmapFileReader &in, QVector<quint32> &positions) {
   }
 }
 
-void Index::writePositions(QDataStream &out,
+void Index::writePositions(BufferedWriter &out,
                            const QVector<quint32> &positions) {
   quint32 prev = 0;
-  writeVInt(out, positions.size());
+  out.writeVInt(positions.size());
   foreach (quint32 position, positions) {
     // Convert to delta from absolute.
     quint32 delta = position - prev;
-    writeVInt(out, delta);
+    out.writeVInt(delta);
     prev = position;
   }
 }

@@ -12,6 +12,7 @@
 
 #include "git/Id.h"
 #include "git/Repository.h"
+#include "BufferedWriter.h"
 #include "MmapFileReader.h"
 #include <QList>
 #include <QObject>
@@ -113,12 +114,10 @@ public:
   static QDir indexDir(const git::Repository &repo);
   static QString lockFile(const git::Repository &repo);
 
-  // vint
-  static void writeVInt(QDataStream &out, quint32 arg);
 
   // positions
   static void readPositions(MmapFileReader &in, QVector<quint32> &positions);
-  static void writePositions(QDataStream &out,
+  static void writePositions(BufferedWriter &out,
                              const QVector<quint32> &positions);
 
   // Enable logging. The log is written to the index dir.
