@@ -145,11 +145,11 @@ bool Index::write(PostingMap map) {
     idFile.write(id.toByteArray(), GIT_OID_SHA1_SIZE);
 
   // Open existing postings file.
-  MmapFileReader postIn(dir.filePath(kPostFile));
-  postIn.open();
+  MmapFileReader postInFile(dir.filePath(kPostFile));
+  postInFile.open();
 
-  MmapFileReader proxIn(dir.filePath(kProxFile));
-  proxIn.open();
+  MmapFileReader proxInFile(dir.filePath(kProxFile));
+  proxInFile.open();
 
   // Create a copy of the existing dictionary.
   Dictionary dict = mDict;
@@ -171,15 +171,15 @@ bool Index::write(PostingMap map) {
     } else {
       // Read existing postings.
       key = it->key;
-      quint32 postCount = postIn.readVInt();
+      quint32 postCount = postInFile.readVInt();
       bool end = (newIt == newEnd || newIt.key() != it->key);
       postings.reserve(postCount + (!end ? newIt.value().size() : 0));
       for (quint32 i = 0; i < postCount; ++i) {
         quint32 proxPos;
         Posting posting;
-        posting.id = postIn.readVInt();
-        postIn >> posting.field >> proxPos;
-        readPositions(proxIn, posting.positions);
+        posting.id = postInFile.readVInt();
+        postInFile >> posting.field >> proxPos;
+        readPositions(proxInFile, posting.positions);
         postings.append(posting);
       }
 
@@ -208,8 +208,8 @@ bool Index::write(PostingMap map) {
   }
 
   // Close in files.
-  //postInFile.close();
-  //proxInFile.close();
+  postInFile.close();
+  proxInFile.close();
 
   // Write out files.
   postFile.commit();
@@ -282,7 +282,7 @@ QList<Index::Posting> Index::postings(const Term &term, bool positional) const {
     quint32 proxPos;
     Posting posting;
     posting.id = file.readVInt();
-    
+
     file >> posting.field >> proxPos;
 
     // Filter by field.
