@@ -131,13 +131,11 @@ bool Index::write(PostingMap map) {
   // Open files for writing.
   QDir dir = indexDir();
   QSaveFile idFile(dir.filePath(kIdFile));
-  BufferedWriter postFile(dir.filePath(kPostFile));
-  BufferedWriter proxFile(dir.filePath(kProxFile));
-  BufferedWriter dictFile(dir.filePath(kDictFile));
-  if (!idFile.open(QIODevice::WriteOnly) ||
-      !postFile.open() ||
-      !proxFile.open() ||
-      !dictFile.open())
+  BufferedWriter postFile(dir.filePath(kPostFile), true);
+  BufferedWriter proxFile(dir.filePath(kProxFile), true);
+  BufferedWriter dictFile(dir.filePath(kDictFile), true);
+  if (!idFile.open(QIODevice::WriteOnly) || !postFile.open() ||
+      !proxFile.open() || !dictFile.open())
     return false;
 
   // Write id file.
