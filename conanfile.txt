@@ -1,0 +1,13 @@
+[requires]
+hunspell/1.7.2
+libssh2/1.11.1
+lua/5.4.7
+
+[layout]
+cmake_layout
+
+[generators]
+CMakeDeps
+
+[options]
+*:shared=False

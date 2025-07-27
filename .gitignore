@@ -2,7 +2,8 @@ build
 .cache
 .DS_Store
 .project
-.vscode/
+.vscode/*
+!.vscode/settings.json
 CMakeLists.txt.user
 cmake-build-debug/
 build*
@@ -12,3 +13,4 @@ build
 .venv
 compile_commands.json
 .flatpak-builder
+CMakeUserPresets.json

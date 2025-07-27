@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.24)
 project(Gittyup)
 
 # Set name and version.
@@ -53,16 +53,12 @@ set(BUILD_SHARED_LIBS OFF)
 option(FLATPAK "Building for flatpak" OFF)
 option(DEBUG_FLATPAK "Building but using flatpak urls for testing" OFF)
 option(ENABLE_UPDATE_OVER_GUI "Enable updating from the Gittyup gui" ON)
-option(USE_SYSTEM_OPENSSL "Use the system-wide OpenSSL installation" ON)
 option(
   USE_SYSTEM_LIBGIT2
   "Use the system-wide libgit2 installation (Gittyup requires the current development branch)"
   OFF)
-option(USE_SYSTEM_LIBSSH2 "Use the system-wide libssh2 installation" ON)
 option(USE_SYSTEM_GIT "Use the system-wide GIT installation" OFF)
 option(USE_SYSTEM_QT "Don't copy QT files into the installation directory" ON)
-option(USE_SYSTEM_LUA "Use the system-wide Lua installation" OFF)
-option(USE_SYSTEM_HUNSPELL "Use the system-wide hunspell installation" OFF)
 option(USE_SYSTEM_CMARK "Use the system-wide cmark installation" OFF)
 option(ENABLE_TESTS "Enable Gittyup Unittests" ON)
 
@@ -74,19 +70,6 @@ set(LUA_MODULES_PATH
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
 include(FindPkgLibraries)
-if(NOT USE_SYSTEM_LIBSSH2)
-  set(USE_SSH
-      "localbuild"
-      CACHE BOOL "Use ssh")
-else()
-  set(USE_SSH
-      ON
-      CACHE BOOL "Use ssh")
-  find_pkglibraries(LIBSSH2 libssh2)
-  if(NOT LIBSSH2_FOUND)
-    find_package(libssh2 REQUIRED)
-  endif()
-endif()
 
 # Require C++17.
 set(CMAKE_CXX_STANDARD 17)
@@ -175,6 +158,11 @@ else()
   set(L10N_INSTALL_DIR Resources/l10n)
   set(RESOURCES_DIR Resources)
 endif()
+
+# Add dependencies with conan as fallback
+find_package(Libssh2 REQUIRED)
+find_package(lua REQUIRED)
+find_package(hunspell REQUIRED)
 
 add_subdirectory(dep)
 add_subdirectory(src)
