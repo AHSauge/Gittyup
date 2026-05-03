@@ -564,8 +564,7 @@ void FileWidget::updatePatch(const git::Patch &patch, const git::Patch &staged,
       mHunkLayout->addWidget(hunk);
     }
   } else {
-    if (canFetchMore())
-      fetchMore();
+    fetchAll(-1);
   }
 }
 

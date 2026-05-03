@@ -11,6 +11,7 @@
 #define DIFFVIEW_H
 
 #include "../FindWidget.h"
+#include "FileDiffWorker.h"
 #include "editor/TextEditor.h"
 #include "git/Commit.h"
 #include "git/Diff.h"
@@ -20,7 +21,9 @@
 #include "app/Application.h"
 #include "app/Theme.h"
 #include <QMap>
+#include <QPointer>
 #include <QScrollArea>
+#include <QThread>
 
 class QCheckBox;
 class QVBoxLayout;
@@ -121,9 +124,7 @@ protected:
   void dragEnterEvent(QDragEnterEvent *event) override;
 
 private:
-  bool canFetchMore();
-  void fetchMore(int fetchWidgets = 4);
-  void fetchAll(int index = -1);
+  void addFileWidget(FileDiffData fdd);
   void indexChanged(const QStringList &paths);
   void loadStagedPatches();
 
@@ -142,6 +143,7 @@ private:
   DiffTreeModel *mDiffTreeModel{nullptr};
   QWidget *mParent{nullptr};
   QVBoxLayout *mFileWidgetLayout{nullptr};
+  QPointer<QThread> mWorkerThread;
 };
 
 #endif
