@@ -11,6 +11,7 @@
 #include "Blob.h"
 #include "Id.h"
 #include "Repository.h"
+#include "git2/config.h"
 #include "git2/filter.h"
 #include "git2/index.h"
 #include <QDataStream>
@@ -69,7 +70,13 @@ Patch::Patch(git_patch *patch) : d(patch, git_patch_free) {
   }
 
   int lineCount = lines.size();
-  int context = git_patch_context_lines(patch);
+  git_config *cfg = NULL;
+  int32_t context = 3;
+
+  if (git_repository_config(&cfg, repo) == 0) {
+    git_config_get_int32(&context, cfg, "diff.context");
+    git_config_free(cfg);
+  }
   for (int i = 0; i < lineCount; ++i) {
     if (!lines.at(i).startsWith("<<<<<<<"))
       continue;
@@ -156,8 +163,8 @@ Patch::LineStats Patch::lineStats() const {
   git_patch_line_stats(&context, &additions, &deletions, d.data());
 
   LineStats stats;
-  stats.additions = additions;
-  stats.deletions = deletions;
+  stats.additions = static_cast<int>(additions);
+  stats.deletions = static_cast<int>(deletions);
   return stats;
 }
 
@@ -186,7 +193,7 @@ int Patch::count() const {
   if (isConflicted())
     return mConflicts.size();
 
-  return git_patch_num_hunks(d.data());
+  return static_cast<int>(git_patch_num_hunks(d.data()));
 }
 
 QByteArray Patch::header(int hidx) const {
@@ -195,7 +202,10 @@ QByteArray Patch::header(int hidx) const {
 
   const git_diff_hunk *hunk = nullptr;
   int result = git_patch_get_hunk(&hunk, nullptr, d.data(), hidx);
-  return (GIT_OK == result) ? hunk->header : QByteArray();
+  if (GIT_OK != result)
+    return QByteArray();
+
+  return QByteArray(hunk->header);
 }
 
 const git_diff_hunk *Patch::header_struct(int hidx) const {
@@ -211,7 +221,7 @@ int Patch::lineCount(int hidx) const {
   if (isConflicted())
     return mConflicts.at(hidx).lines.size();
 
-  return git_patch_num_lines_in_hunk(d.data(), hidx);
+  return static_cast<int>(git_patch_num_lines_in_hunk(d.data(), hidx));
 }
 
 char Patch::lineOrigin(int hidx, int ln) const {

@@ -1,12 +1,14 @@
-cmake_minimum_required(VERSION 3.12)
+# 3.19+: install(FILES $<TARGET_FILE:...>) in pack/CMakeLists.txt (libssh2.dll).
+cmake_minimum_required(VERSION 3.19)
 project(Gittyup)
 
 # Set name and version.
 set(GITTYUP_NAME "Gittyup")
 set(GITTYUP_EXECUTABLE_NAME "gittyup")
 set(GITTYUP_IDENTIFIER "com.github.Murmele.Gittyup")
-set(GITTYUP_VERSION_MAJOR 1)
-set(GITTYUP_VERSION_MINOR 4)
+set(GITTYUP_ORGANIZATION_DOMAIN "Murmele.github.com")
+set(GITTYUP_VERSION_MAJOR 2)
+set(GITTYUP_VERSION_MINOR 0)
 set(GITTYUP_VERSION_PATCH 0)
 set(GITTYUP_VERSION
     "${GITTYUP_VERSION_MAJOR}.${GITTYUP_VERSION_MINOR}.${GITTYUP_VERSION_PATCH}"
@@ -65,6 +67,16 @@ option(USE_SYSTEM_LUA "Use the system-wide Lua installation" OFF)
 option(USE_SYSTEM_HUNSPELL "Use the system-wide hunspell installation" OFF)
 option(USE_SYSTEM_CMARK "Use the system-wide cmark installation" OFF)
 option(ENABLE_TESTS "Enable Gittyup Unittests" ON)
+
+# Typically system libgit2 does NOT have experimental settings enabled, hence we
+# need to disable SHA256 support
+if(USE_SYSTEM_LIBGIT2)
+  set(_DEFAULT_ENABLE_SHA256 OFF)
+else()
+  set(_DEFAULT_ENABLE_SHA256 ON)
+endif()
+option(ENABLE_SHA256 "Enable SHA256 support within Gittyup"
+       ${_DEFAULT_ENABLE_SHA256})
 
 set(LUA_MODULES_PATH
     CACHE
@@ -144,6 +156,14 @@ endif()
 
 if(DEBUG_FLATPAK)
   add_compile_definitions(DEBUG_FLATPAK)
+endif()
+
+if(ENABLE_SHA256)
+  add_compile_definitions(GIT_EXPERIMENTAL_SHA256)
+endif()
+
+if(USE_SYSTEM_LIBGIT2)
+  add_compile_definitions(USE_SYSTEM_LIBGIT2)
 endif()
 
 include(GNUInstallDirs) # Defines some variables as BINDIR, LIBDIR, ...
