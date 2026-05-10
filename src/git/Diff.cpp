@@ -43,6 +43,7 @@ Diff::Data::~Data() { git_diff_free(diff); }
 void Diff::Data::resetMap() {
   map.clear();
   int count = git_diff_num_deltas(diff);
+  map.reserve(count);
   for (int i = 0; i < count; ++i)
     map.append(i);
 }
