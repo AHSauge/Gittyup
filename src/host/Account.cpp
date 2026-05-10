@@ -122,7 +122,7 @@ void Account::setErrorReply(const QNetworkReply &reply) {
   QString details = reply.errorString();
 
   for (auto error : sslErrors) {
-    details += "\n" + error.errorString();
+    details += "\n" % error.errorString();
   }
 
   mError->setText(tr("Connection failed"), details);

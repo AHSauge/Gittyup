@@ -375,7 +375,7 @@ public:
       QString firstId = kLinkFmt.arg(firstUrl.toString(), first.shortId());
 
       QString range = kRangeFmt.arg(lastId, firstId);
-      mHash->setText(brightText(tr("Range:")) + " " + range);
+      mHash->setText(brightText(tr("Range:")) % " " % range);
 
       // Remember the range.
       mId = kRangeFmt.arg(last.id().toString(), first.id().toString());
@@ -393,7 +393,7 @@ public:
     git::Signature author = commit.author();
     git::Signature committer = commit.committer();
     QDateTime date = commit.committer().date().toLocalTime();
-    mHash->setText(brightText(tr("Id:")) + " " + commit.shortId());
+    mHash->setText(brightText(tr("Id:")) % " " % commit.shortId());
     mAuthorCommitterDate->setDate(
         brightText(QLocale().toString(date, QLocale::LongFormat)));
     mAuthorCommitterDate->setAuthorCommitter(
@@ -410,7 +410,7 @@ public:
 
     QString initial = kItalicFmt.arg(tr("initial commit"));
     QString text = parents.isEmpty() ? initial : parents.join(", ");
-    mParents->setText(brightText(tr("Parents:")) + " " + text);
+    mParents->setText(brightText(tr("Parents:")) % " " % text);
 
     QString msg = commit.message(git::Commit::SubstituteEmoji).trimmed();
     mMessage->setPlainText(msg);
@@ -645,7 +645,7 @@ QString DetailView::overrideEmail() const { return mOverrideEmail; }
 void DetailView::updateAuthor() {
   git::Config config = RepoView::parentView(this)->repo().gitConfig();
 
-  QString text = "<a href=\"changeAuthor\"><b>" + tr("Author:") + "</b></a> ";
+  QString text = "<a href=\"changeAuthor\"><b>" % tr("Author:") % "</b></a> ";
 
   if (mOverrideUser.isEmpty())
     text += config.value<QString>("user.name").toHtmlEscaped();
@@ -654,12 +654,12 @@ void DetailView::updateAuthor() {
 
   if (mOverrideEmail.isEmpty())
     text +=
-        " &lt;" + config.value<QString>("user.email").toHtmlEscaped() + "&gt;";
+        " &lt;" % config.value<QString>("user.email").toHtmlEscaped() % "&gt;";
   else
-    text += " &lt;" + mOverrideEmail.toHtmlEscaped() + "&gt;";
+    text += " &lt;" % mOverrideEmail.toHtmlEscaped() % "&gt;";
 
   if (!mOverrideUser.isEmpty() || !mOverrideEmail.isEmpty())
-    text += " (<a href=\"reset\">" + tr("reset") + "</a>)";
+    text += " (<a href=\"reset\">" % tr("reset") % "</a>)";
 
   mAuthorLabel->setText(text);
 }

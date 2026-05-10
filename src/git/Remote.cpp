@@ -603,12 +603,12 @@ Result Remote::push(Callbacks *callbacks, const Reference &src,
   QString prefix = force ? "+" : QString();
   QString refspec = prefix + src.qualifiedName();
   if (!dst.isEmpty()) {
-    refspec += ":" + dst;
+    refspec += ":" % dst;
   } else {
     QString key = QString("branch.%1.merge").arg(src.name());
     QString upstream = repo.gitConfig().value<QString>(key);
     if (!upstream.isEmpty())
-      refspec += ":" + upstream;
+      refspec += ":" % upstream;
   }
 
   QStringList refspecs(refspec);

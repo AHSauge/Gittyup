@@ -122,7 +122,7 @@ QString HotkeyData::fullLabel() const {
 
   if (mGroup && mGroup->mGroup // Don't use the root's label
   ) {
-    res = mGroup->fullLabel() + " -> " + res;
+    res = mGroup->fullLabel() % " -> " % res;
   }
 
   return res;
@@ -332,7 +332,7 @@ public:
                 conflicts->setText(
                     tr("The selected key is the same for the following "
                        "actions:\n%1")
-                        .arg(" - " + conflictLabels.join("\n - ")));
+                        .arg(" - " % conflictLabels.join("\n - ")));
               }
             });
 

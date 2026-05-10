@@ -342,7 +342,7 @@ void FileContextMenu::handleUncommittedChanges(const git::Index &index,
         dialog->setInformativeText(tr("This action cannot be undone."));
         QString detailedText = modified.join('\n');
         for (const auto &s : submodules)
-          detailedText += s.path() + " " + tr("(Submodule)") + "\n";
+          detailedText += s.path() % " " % tr("(Submodule)") % "\n";
         dialog->setDetailedText(detailedText);
 
         // Expand the Show Details
@@ -443,7 +443,7 @@ void FileContextMenu::handleCommits(const QList<git::Commit> &commits,
 
     if (exportFile(view, folder, file))
       QDesktopServices::openUrl(QUrl::fromLocalFile(
-          QFileInfo(folder + "/" + filename).absoluteFilePath()));
+          QFileInfo(folder % "/" % filename).absoluteFilePath()));
     else
       view->error(logentry, tr("open file"), filename, tr("Blob is invalid."));
   });
@@ -517,7 +517,7 @@ bool FileContextMenu::exportFile(const RepoView *view, const QString &folder,
     return false;
 
   auto filename = file.split("/").last();
-  QFile f(folder + "/" + filename);
+  QFile f(folder % "/" % filename);
   if (!f.open(QFile::ReadWrite))
     return false;
 

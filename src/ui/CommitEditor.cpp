@@ -388,7 +388,7 @@ CommitEditor::CommitEditor(const git::Repository &repo, QWidget *parent)
     }
 
     // Apply changes, disable invalid dictionary.
-    QString path = mDictPath + "/" + mDictName;
+    QString path = mDictPath % "/" % mDictName;
     if (!mMessage->setupSpellCheck(path, mUserDict, mSpellError,
                                    mSpellIgnore) &&
         mDictName != "none") {
@@ -453,7 +453,7 @@ CommitEditor::CommitEditor(const git::Repository &repo, QWidget *parent)
 
   // Setup spell check.
   if (mDictName != "none") {
-    QString path = mDictPath + "/" + mDictName;
+    QString path = mDictPath % "/" % mDictName;
     if (!mMessage->setupSpellCheck(path, mUserDict, mSpellError,
                                    mSpellIgnore)) {
       foreach (QAction *action, dictActionGroup->actions()) {
