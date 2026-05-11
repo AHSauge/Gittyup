@@ -52,8 +52,9 @@ void DiffTreeModel::createDiffTree() {
 
   for (int patchNum = 0; patchNum < mDiff.count(); ++patchNum) {
     QString path = mDiff.name(patchNum);
-    auto pathParts = path.split("/");
-    mRoot->addChild(pathParts, patchNum, 0, mListView);
+    QStringView pathView(path);
+    auto pathParts = pathView.split(u'/');
+    mRoot->addChild(path, pathParts, patchNum, 0, mListView);
   }
 }
 
@@ -63,7 +64,7 @@ void DiffTreeModel::setDiff(const git::Diff &diff) {
   if (diff) {
     delete mRoot;
     mDiff = diff;
-    mRoot = new Node(mRepo.workdir().path(), -1);
+    mRoot = new Node(mRepo.workdir().path(), -1, mDiff.count());
     createDiffTree();
   }
 
@@ -441,8 +442,12 @@ QVariant DiffTreeModel::getDisplayRole(const QModelIndex &index) const {
 //######     DiffTreeModel::Node ##############################################
 //#############################################################################
 
-Node::Node(const QString &name, int patchIndex, Node *parent)
-    : mName(name), mPatchIndex(patchIndex), mParent(parent) {}
+Node::Node(const QStringView &name, int patchIndex, size_t expectedSize,
+           Node *parent)
+    : mName(name), mPatchIndex(patchIndex), mParent(parent) {
+  if (expectedSize > 0)
+    mChildren.reserve(expectedSize);
+}
 
 Node::~Node() { qDeleteAll(mChildren); }
 
@@ -459,27 +464,29 @@ bool Node::hasChildren() const { return mChildren.length() > 0; }
 
 const QList<Node *> &Node::children() const { return mChildren; }
 
-void Node::addChild(const QStringList &pathPart, int patchIndex,
-                    int indexFirstDifferent, bool listView) {
+void Node::addChild(const QString &path, const QList<QStringView> &pathPart,
+                    int patchIndex, int indexFirstDifferent, bool listView) {
   Node *node = nullptr;
 
   if (listView) {
     // Add child with full path in list view.
-    node = new Node(pathPart.join("/"), patchIndex, this);
+    node = new Node(path, patchIndex, 0, this);
   } else {
     for (auto child : mChildren) {
       if (child->name() == pathPart[indexFirstDifferent]) {
-        child->addChild(pathPart, patchIndex, indexFirstDifferent + 1, false);
+        child->addChild(path, pathPart, patchIndex, indexFirstDifferent + 1,
+                        false);
         return;
       }
     }
 
     if (indexFirstDifferent + 1 < pathPart.length()) {
       // Folders cannot have a patch Index!
-      node = new Node(pathPart[indexFirstDifferent], -1, this);
-      node->addChild(pathPart, patchIndex, indexFirstDifferent + 1, false);
+      node = new Node(pathPart[indexFirstDifferent], -1, 0, this);
+      node->addChild(path, pathPart, patchIndex, indexFirstDifferent + 1,
+                     false);
     } else if (indexFirstDifferent < pathPart.length())
-      node = new Node(pathPart[indexFirstDifferent], patchIndex, this);
+      node = new Node(pathPart[indexFirstDifferent], patchIndex, 0, this);
   }
   if (node)
     mChildren.append(node);

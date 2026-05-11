@@ -24,7 +24,8 @@ class Node : public QObject // item of the model
   Q_OBJECT
 
 public:
-  Node(const QString &name, int patchIndex, Node *parent = nullptr);
+  Node(const QStringView &name, int patchIndex, size_t expectedSize,
+       Node *parent = nullptr);
   ~Node();
 
   enum class ParentStageState { Any, Staged, Unstaged };
@@ -34,9 +35,9 @@ public:
 
   Node *parent() const;
   bool hasChildren() const;
-  void addChild(const QStringList &pathPart, int patchIndex,
-                int indexFirstDifferent, bool listView);
   const QList<Node *> &children() const;
+  void addChild(const QString &path, const QList<QStringView> &pathPart,
+                int patchIndex, int indexFirstDifferent, bool listView);
   git::Index::StagedState stageState(const git::Index &idx,
                                      ParentStageState searchingState) const;
   void childFiles(QStringList &files);
