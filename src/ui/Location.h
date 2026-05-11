@@ -30,9 +30,9 @@ public:
   bool isUncommitted() const { return mId.isEmpty(); }
 
   RepoView::ViewMode mode() const { return mMode; }
-  QString ref() const { return mRef; }
-  QString id() const { return mId; }
-  QString file() const { return mFile; }
+  const QString &ref() const { return mRef; }
+  const QString &id() const { return mId; }
+  const QString &file() const { return mFile; }
 
   QString toString(const git::Repository &repo) const;
 

@@ -29,14 +29,14 @@ public:
 
   enum class ParentStageState { Any, Staged, Unstaged };
 
-  QString name() const;
+  const QString &name() const;
   QString path(bool relative = false) const;
 
   Node *parent() const;
   bool hasChildren() const;
-  QList<Node *> children() const;
   void addChild(const QStringList &pathPart, int patchIndex,
                 int indexFirstDifferent, bool listView);
+  const QList<Node *> &children() const;
   git::Index::StagedState stageState(const git::Index &idx,
                                      ParentStageState searchingState) const;
   void childFiles(QStringList &files);

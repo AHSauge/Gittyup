@@ -638,9 +638,9 @@ void DetailView::findPrevious() {
   static_cast<ContentWidget *>(mContent->currentWidget())->findPrevious();
 }
 
-QString DetailView::overrideUser() const { return mOverrideUser; }
+const QString &DetailView::overrideUser() const { return mOverrideUser; }
 
-QString DetailView::overrideEmail() const { return mOverrideEmail; }
+const QString &DetailView::overrideEmail() const { return mOverrideEmail; }
 
 void DetailView::updateAuthor() {
   git::Config config = RepoView::parentView(this)->repo().gitConfig();

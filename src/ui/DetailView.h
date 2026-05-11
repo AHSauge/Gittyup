@@ -79,8 +79,8 @@ public:
   void findNext();
   void findPrevious();
 
-  QString overrideUser() const;
-  QString overrideEmail() const;
+  const QString &overrideUser() const;
+  const QString &overrideEmail() const;
 
 signals:
   void viewModeChanged(RepoView::ViewMode mode, bool spontaneous = false);

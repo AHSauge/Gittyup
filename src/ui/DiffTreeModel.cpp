@@ -446,7 +446,7 @@ Node::Node(const QString &name, int patchIndex, Node *parent)
 
 Node::~Node() { qDeleteAll(mChildren); }
 
-QString Node::name() const { return mName; }
+const QString &Node::name() const { return mName; }
 
 QString Node::path(bool relative) const {
   bool root = (!mParent || (relative && !mParent->mParent));
@@ -457,7 +457,7 @@ Node *Node::parent() const { return mParent; }
 
 bool Node::hasChildren() const { return mChildren.length() > 0; }
 
-QList<Node *> Node::children() const { return mChildren; }
+const QList<Node *> &Node::children() const { return mChildren; }
 
 void Node::addChild(const QStringList &pathPart, int patchIndex,
                     int indexFirstDifferent, bool listView) {

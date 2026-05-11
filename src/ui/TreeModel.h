@@ -73,12 +73,12 @@ private:
     Node(const QString &name, const git::Object &obj, Node *parent = nullptr);
     ~Node();
 
-    QString name() const;
+    const QString &name() const;
     QString path(bool relative = false) const;
 
     Node *parent() const;
     bool hasChildren() const;
-    QList<Node *> children();
+    const QList<Node *> &children();
 
     git::Object object() const;
 

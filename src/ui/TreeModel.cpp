@@ -253,7 +253,7 @@ TreeModel::Node::Node(const QString &name, const git::Object &obj, Node *parent)
 
 TreeModel::Node::~Node() { qDeleteAll(mChildren); }
 
-QString TreeModel::Node::name() const { return mName; }
+const QString &TreeModel::Node::name() const { return mName; }
 
 QString TreeModel::Node::path(bool relative) const {
   bool root = (!mParent || (relative && !mParent->mParent));
@@ -267,7 +267,7 @@ bool TreeModel::Node::hasChildren() const {
   return (tree.isValid() && tree.count() > 0);
 }
 
-QList<TreeModel::Node *> TreeModel::Node::children() {
+const QList<TreeModel::Node *> &TreeModel::Node::children() {
   if (mChildren.isEmpty() && hasChildren()) {
     git::Tree tree = object();
     for (int i = 0; i < tree.count(); ++i) {
