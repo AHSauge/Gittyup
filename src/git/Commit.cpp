@@ -35,6 +35,7 @@ namespace git {
 
 namespace {
 
+static const QRegularExpression kSearchPattern(":((\\w|_)+):");
 QString sEmojiFile;
 QMap<QString, QString> sEmojiCache;
 
@@ -341,8 +342,7 @@ QString Commit::substituteEmoji(const QString &text) const {
 
   // Build list of matches.
   QList<QRegularExpressionMatch> matches;
-  QRegularExpression re(":((\\w|_)+):");
-  QRegularExpressionMatchIterator it = re.globalMatch(text);
+  QRegularExpressionMatchIterator it = kSearchPattern.globalMatch(text);
   while (it.hasNext())
     matches.prepend(it.next());
 
