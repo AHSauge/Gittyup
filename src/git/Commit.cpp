@@ -320,7 +320,7 @@ QString Commit::decodeMessage(const char *msg) const {
   return msg;
 }
 
-QString Commit::substituteEmoji(const QString &text) const {
+QString Commit::substituteEmoji(QString text) const {
   if (sEmojiFile.isEmpty())
     return text;
 
@@ -347,14 +347,13 @@ QString Commit::substituteEmoji(const QString &text) const {
     matches.prepend(it.next());
 
   // Substitute in reverse order.
-  QString result = text;
   foreach (const QRegularExpressionMatch &match, matches) {
     auto it = sEmojiCache.constFind(match.captured(1));
     if (it != sEmojiCache.constEnd())
-      result.replace(match.capturedStart(), match.capturedLength(), it.value());
+      text.replace(match.capturedStart(), match.capturedLength(), it.value());
   }
 
-  return result;
+  return text;
 }
 
 void Commit::setEmojiFile(const QString &file) { sEmojiFile = file; }

@@ -92,7 +92,7 @@ private:
   operator git_commit *() const;
 
   QString decodeMessage(const char *msg) const;
-  QString substituteEmoji(const QString &text) const;
+  QString substituteEmoji(QString text) const;
 
   friend class Blame;
   friend class AnnotatedCommit;
