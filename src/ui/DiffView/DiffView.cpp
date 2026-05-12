@@ -285,47 +285,44 @@ void DiffView::updateFiles() {
   mFiles.clear();
 
   auto dtw = dynamic_cast<DoubleTreeWidget *>(mParent);
-  QList<QModelIndex> indexList = dtw->selectedIndices();
-  QList<QModelIndex> indices;
-  for (auto index : indexList) {
-    QList<QModelIndex> addList = mDiffTreeModel->modelIndices(index);
-    for (auto add : addList) {
-      if (!indices.contains(add))
-        indices.append(add);
+  if (mDiff.isValid() && mDiffTreeModel->fileCount(dtw->selectedIndex()) > 0) {
+
+    QList<QModelIndex> indexList = dtw->selectedIndices();
+    QList<QModelIndex> indices;
+    for (auto index : indexList) {
+      QList<QModelIndex> addList = mDiffTreeModel->modelIndices(index);
+      for (auto add : addList) {
+        if (!indices.contains(add))
+          indices.append(add);
+      }
     }
+
+    RepoView *view = RepoView::parentView(this);
+    auto *worker =
+        new FileDiffWorker(mDiff, mStagedDiff, mStagedPatches, indices);
+    mWorkerThread = new QThread(this);
+    worker->moveToThread(mWorkerThread);
+
+    connect(worker, &FileDiffWorker::diffReady, this, &DiffView::addFileWidget,
+            Qt::QueuedConnection);
+
+    connect(
+        worker, &FileDiffWorker::invalidPatch, this,
+        [view]() { QTimer::singleShot(0, [view]() { view->refresh(); }); },
+        Qt::QueuedConnection);
+
+    // Clean up the thread when done
+    connect(worker, &FileDiffWorker::finished, mWorkerThread, &QThread::quit);
+
+    connect(mWorkerThread, &QThread::finished, worker, &QObject::deleteLater);
+    connect(mWorkerThread, &QThread::finished, this,
+            [this]() { mWorkerThread = nullptr; });
+
+    // Kick off the worker thread
+    connect(mWorkerThread, &QThread::started, worker, &FileDiffWorker::process);
+
+    mWorkerThread->start();
   }
-
-  RepoView *view = RepoView::parentView(this);
-  auto *worker = new FileDiffWorker(mDiff, mStagedDiff, mStagedPatches, indices);
-  mWorkerThread = new QThread(this);
-  worker->moveToThread(mWorkerThread);
-
-  connect(worker, &FileDiffWorker::diffReady,
-          this, &DiffView::addFileWidget,
-          Qt::QueuedConnection);
-
-  connect(worker, &FileDiffWorker::invalidPatch,
-          this, [view]() {
-            QTimer::singleShot(0, [view]() { view->refresh(); });
-          },
-          Qt::QueuedConnection);
-
-  //Clean up the thread when done
-  connect(worker, &FileDiffWorker::finished,
-          mWorkerThread, &QThread::quit);
-
-  connect(mWorkerThread, &QThread::finished,
-          worker, &QObject::deleteLater);
-  connect(mWorkerThread, &QThread::finished,
-          this, [this]() {
-            mWorkerThread = nullptr;
-          });
-
-  //Kick off the worker thread
-  connect(mWorkerThread, &QThread::started,
-          worker, &FileDiffWorker::process);
-
-  mWorkerThread->start();
 }
 
 QList<TextEditor *> DiffView::editors() {
