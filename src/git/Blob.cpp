@@ -28,7 +28,9 @@ bool Blob::isBinary() const { return git_blob_is_binary(*this); }
 
 QByteArray Blob::content() const {
   const char *content = static_cast<const char *>(git_blob_rawcontent(*this));
-  return QByteArray(content, git_blob_rawsize(*this));
+  // Make a non-copy QByteArray. This introduces a validity tide to the
+  // life-time of the Blob object
+  return QByteArray::fromRawData(content, git_blob_rawsize(*this));
 }
 
 } // namespace git

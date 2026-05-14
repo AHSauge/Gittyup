@@ -21,6 +21,10 @@ public:
   Blob(const Object &rhs);
 
   bool isBinary() const;
+
+  /// @brief Grab the content of the blob
+  /// @return QByteArray of the blob
+  /// @note The returned QByteArray is _only_ valid whilst the Blob is alive
   QByteArray content() const;
 
 private:
