@@ -13,7 +13,6 @@
 #include "languages.h"
 #include <QCoreApplication>
 #include <QDir>
-#include <QRegularExpression>
 #include <QSettings>
 #include <QStandardPaths>
 #include <stdexcept>
@@ -60,6 +59,20 @@ Settings::Settings(QObject *parent) : QObject(parent) {
   map[kTranslationLanguage] = QVariant(Languages::system);
   mDefaults[kTranslation] = map;
   mDefaults[kTranslation].toMap()[kTranslationLanguage] = Languages::system;
+
+  // Pre-cache regexp objects for lexer method
+  QVariantMap lexers(mDefaults.value("lexers").toMap());
+  for (const QString &key : lexers.keys()) {
+    QVariantMap map(lexers.value(key).toMap());
+    if (map.contains("patterns")) {
+      for (const QString &pattern :
+           map.value("patterns").toString().split(",")) {
+        QRegularExpression regExp{
+            QRegularExpression::fromWildcard(pattern, CS)};
+        mCachedRegexp[pattern] = regExp;
+      }
+    }
+  }
 }
 
 QString Settings::group() const { return mGroup.join("/"); }
@@ -125,23 +138,22 @@ QString Settings::lexer(const QString &filename) {
 
   // Try all patterns first.
   QVariantMap lexers(mDefaults.value("lexers").toMap());
-  foreach (const QString &key, lexers.keys()) {
+  for (const QString &key : lexers.keys()) {
     QVariantMap map(lexers.value(key).toMap());
     if (map.contains("patterns")) {
-      foreach (QString pattern, map.value("patterns").toString().split(",")) {
-        QRegularExpression regExp{
-            QRegularExpression::fromWildcard(pattern, CS)};
-        if (regExp.match(name).hasMatch())
+      for (const QString &pattern :
+           map.value("patterns").toString().split(",")) {
+        if (mCachedRegexp[pattern].match(name).hasMatch())
           return key;
       }
     }
   }
 
   // Try to match by extension.
-  foreach (const QString &key, lexers.keys()) {
+  for (const QString &key : lexers.keys()) {
     QVariantMap map(lexers.value(key).toMap());
     if (map.contains("extensions")) {
-      foreach (QString ext, map.value("extensions").toString().split(",")) {
+      for (const QString &ext : map.value("extensions").toString().split(",")) {
         if (suffix == ext)
           return key;
       }
