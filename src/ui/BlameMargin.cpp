@@ -22,6 +22,7 @@
 #include <QScrollBar>
 #include <QStyleOption>
 #include <QTextLayout>
+#include <QThreadPool>
 #include <QToolTip>
 #include <QUrl>
 #include <QUrlQuery>
@@ -77,6 +78,13 @@ void BlameMargin::setBlame(const git::Repository &repo,
 }
 
 void BlameMargin::clear() {
+  // Do delayed deletion of mBlame and mSource as they can be quite expensive to
+  // delete
+  auto oldBlame = std::move(mBlame);
+  auto oldSource = std::move(mSource);
+  QThreadPool::globalInstance()->start(
+      [b = std::move(oldBlame), s = std::move(oldSource)]() mutable {});
+
   mName = QString();
   mBlame = git::Blame();
   mSource = git::Blame();
