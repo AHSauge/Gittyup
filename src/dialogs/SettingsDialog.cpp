@@ -583,7 +583,7 @@ public:
     QCheckBox *autohideSidebar =
         new QCheckBox(tr("Hide Repository Sidebar after opening a repository"));
     autohideSidebar->setChecked(
-        settings->value(Setting::Id::AutoHideRepoSiderbar).toBool());
+        settings->value(Setting::Id::AutoHideRepoSiderbar, true).toBool());
     connect(autohideSidebar, &QCheckBox::toggled, [](bool checked) {
       Settings::instance()->setValue(Setting::Id::AutoHideRepoSiderbar,
                                      checked);

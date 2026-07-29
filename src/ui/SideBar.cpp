@@ -645,7 +645,7 @@ SideBar::SideBar(TabWidget *tabs, MainWindow *mainWindow, QWidget *parent)
         if (isRepoIndex(index)) {
           tabs->setCurrentIndex(index.row());
           if (Settings::instance()
-                  ->value(Setting::Id::AutoHideRepoSiderbar)
+                  ->value(Setting::Id::AutoHideRepoSiderbar, true)
                   .toBool()) {
             mainWindow->setSideBarVisible(false);
           }
@@ -657,7 +657,7 @@ SideBar::SideBar(TabWidget *tabs, MainWindow *mainWindow, QWidget *parent)
         if (!path.isEmpty()) {
           MainWindow::open(path);
           if (Settings::instance()
-                  ->value(Setting::Id::AutoHideRepoSiderbar)
+                  ->value(Setting::Id::AutoHideRepoSiderbar, true)
                   .toBool()) {
             mainWindow->setSideBarVisible(false);
           }
@@ -686,7 +686,7 @@ SideBar::SideBar(TabWidget *tabs, MainWindow *mainWindow, QWidget *parent)
 
             // Open the repo.
             if (Settings::instance()
-                    ->value(Setting::Id::AutoHideRepoSiderbar)
+                    ->value(Setting::Id::AutoHideRepoSiderbar, true)
                     .toBool()) {
               mainWindow->setSideBarVisible(false);
             }
