@@ -81,6 +81,19 @@ public:
   static Theme *create(const QString &name = QString());
 
 private:
+  /// @brief Check if GNOME prefers dark mode
+  /// @return True if color-scheme is prefer-dark
+  static bool gnomePrefersDark();
+
+  /// @brief Check if the Linux desktop environment is GNOME
+  /// @return True if GNOME is the desktop environment
+  static bool isGNOME();
+
+  /// @brief Check whether dark mode is preferred
+  /// @return True if dark mode should be used
+  static bool isDarkMode();
+
+private:
   bool mDark;
   QString mName;
   QDir mDir;

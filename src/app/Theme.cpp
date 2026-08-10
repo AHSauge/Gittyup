@@ -14,6 +14,7 @@
 #include "conf/Settings.h"
 #include "dialogs/ThemeDialog.h"
 #include "ui/DiffView/DiffView.h"
+#include <QProcess>
 #include <QProxyStyle>
 #include <QStyleOption>
 #include <QWidget>
@@ -66,10 +67,7 @@ Theme::Theme() {
   QByteArray file = mDir.filePath(QString("%1.lua").arg(mName)).toUtf8();
   mMap = ConfFile(file).parse("theme");
 
-  QPalette palette;
-  QColor base = palette.color(QPalette::Base);
-  QColor text = palette.color(QPalette::Text);
-  mDark = (text.lightnessF() > base.lightnessF());
+  mDark = isDarkMode();
 }
 
 QString Theme::diffButtonStyle(Theme::Diff role) {
@@ -285,4 +283,38 @@ Theme *Theme::create(const QString &defaultName) {
 
   // Use Qt theme.
   return new Theme();
+}
+
+bool Theme::gnomePrefersDark() {
+  QProcess process;
+  process.start("gsettings",
+                {"get", "org.gnome.desktop.interface", "color-scheme"});
+  if (!process.waitForFinished(500)) {
+    return false;
+  } else {
+    const QString result =
+        QString::fromUtf8(process.readAllStandardOutput().trimmed());
+    return result == "'prefer-dark'";
+  }
+}
+
+bool Theme::isGNOME() {
+  auto desktops = QProcessEnvironment::systemEnvironment()
+                      .value("XDG_CURRENT_DESKTOP")
+                      .toLower()
+                      .split(':');
+  return desktops.contains("gnome");
+}
+
+bool Theme::isDarkMode() {
+#ifdef Q_OS_LINUX
+  if (isGNOME()) {
+    return gnomePrefersDark();
+  }
+#endif
+  // TODO: Test if QApplication::styleHints()->colorScheme() could be used here
+  QPalette palette;
+  QColor base = palette.color(QPalette::Base);
+  QColor text = palette.color(QPalette::Text);
+  return (text.lightnessF() > base.lightnessF());
 }
