@@ -1,10 +1,27 @@
-### vX.X.X - 2024-06-13 (DEV)
+### vX.X.X - 2026-01-07 (DEV)
+
+Bug Fix and Feature release
+
+#### Added
+
+* Add more information about the credential stores to give the user the possibility to easily see the tradeoffs of every credential store
+
+#### Changed
+
+* Autohide sidebar when opening repository
+
+----
+
+### v2.0.0 - 2025-11-30
 
 Bug Fix and Feature release
 
 #### Added
 
 * Add commit filter to show only the first parent in the commit list view
+* Add backend support for SHA256 repos
+* Fix email filter being not returning any results
+* Add mmap based reading to speed up indexer
 
 #### Changed
 

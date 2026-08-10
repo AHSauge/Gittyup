@@ -98,7 +98,7 @@ QList<ExternalTool::Info> ExternalTool::readBuiltInTools(const QString &key) {
 
 ExternalTool *ExternalTool::create(const QString &file, const git::Diff &diff,
                                    const git::Repository &repo,
-                                   QObject *parent) {
+                                   bool againstWorkingDir, QObject *parent) {
   if (!diff.isValid())
     return nullptr;
 
@@ -111,15 +111,27 @@ ExternalTool *ExternalTool::create(const QString &file, const git::Diff &diff,
 
   // Create merge tool.
   if (diff.status(index) == GIT_DELTA_CONFLICTED) {
-    git::Index::Conflict conflict = repo.index().conflict(file);
-    git::Blob local = repo.lookupBlob(conflict.ours);
-    git::Blob remote = repo.lookupBlob(conflict.theirs);
-    git::Blob base = repo.lookupBlob(conflict.ancestor);
-    return new MergeTool(path, local, remote, base, parent);
+    if (!againstWorkingDir) {
+      git::Index::Conflict conflict = repo.index().conflict(file);
+      git::Blob local = repo.lookupBlob(conflict.ours);
+      git::Blob remote = repo.lookupBlob(conflict.theirs);
+      git::Blob base = repo.lookupBlob(conflict.ancestor);
+      return new MergeTool(path, local, remote, base, parent);
+    } else {
+      // We execute create() twice. One time only for the local diff
+      // And one time for the other diff
+      // We don't wanna add two times the merge tool
+      return nullptr;
+    }
   }
 
   // Create diff tool.
   git::Blob local = repo.lookupBlob(diff.id(index, git::Diff::OldFile));
   git::Blob remote = repo.lookupBlob(diff.id(index, git::Diff::NewFile));
-  return new DiffTool(path, local, remote, parent);
+  if (diff.isStatusDiff())
+    return new DiffTool(path, local, parent);
+  else if (againstWorkingDir)
+    return new DiffTool(path, remote, parent);
+  else
+    return new DiffTool(path, local, remote, parent);
 }

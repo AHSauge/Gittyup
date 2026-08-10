@@ -12,6 +12,7 @@
 #include "FindWidget.h"
 #include "MenuBar.h"
 #include "RepoView.h"
+#include "conf/Constants.h"
 #include "editor/TextEditor.h"
 #include "git/Blame.h"
 #include "git/Blob.h"
@@ -55,6 +56,7 @@ BlameEditor::BlameEditor(const git::Repository &repo, QWidget *parent)
           &BlameEditor::adjustLineMarginWidth);
   connect(mEditor, &TextEditor::settingsChanged, this,
           &BlameEditor::adjustLineMarginWidth);
+  connect(mEditor, &TextEditor::onVisible, this, &BlameEditor::startBlame);
 
   // Create blame margin.
   mMargin = new BlameMargin(mEditor, this);
@@ -117,7 +119,7 @@ QString BlameEditor::revision() const {
 }
 
 bool BlameEditor::load(const QString &name, const git::Blob &blob,
-                       const git::Commit &commit) {
+                       git::Commit commit) {
   // Clear content.
   clear();
 
@@ -141,10 +143,15 @@ bool BlameEditor::load(const QString &name, const git::Blob &blob,
     if (!file.open(QFile::ReadOnly))
       return false;
 
-    content = file.readAll();
+    // Limit the read to kMaxReadBinary to determine if the file is binary
+    content = file.read(kMaxReadBinary);
     git::Buffer buffer(content.constData(), content.length());
-    if (buffer.isBinary())
+    if (buffer.isBinary()) {
       return false;
+    } else if (content.length() >= kMaxReadBinary) {
+      // Okay, not a binary file. Now we need to grab the rest if needed
+      content += file.readAll();
+    }
   }
 
   // Set editor text.
@@ -157,11 +164,21 @@ bool BlameEditor::load(const QString &name, const git::Blob &blob,
   // Calculate blame.
   if (mRepo.isValid() && !content.isEmpty()) {
     mMargin->startBlame(name);
-    mBlame.setFuture(QtConcurrent::run(&git::Repository::blame, mRepo, name,
-                                       commit, mCallbacks.data()));
+    mPendingBlameCommit = commit;
+    if (mEditor->isVisible()) {
+      startBlame();
+    }
   }
 
   return true;
+}
+void BlameEditor::startBlame() {
+  if (mPendingBlameCommit.has_value()) {
+    mBlame.setFuture(QtConcurrent::run(&git::Repository::blame, mRepo, mName,
+                                       mPendingBlameCommit.value(),
+                                       mCallbacks.data()));
+    mPendingBlameCommit = std::nullopt;
+  }
 }
 
 void BlameEditor::cancelBlame() {
@@ -171,6 +188,7 @@ void BlameEditor::cancelBlame() {
     mBlame.waitForFinished();
   mBlame.setFuture(QFuture<git::Blame>());
   callbacks->setCanceled(false);
+  mPendingBlameCommit = std::nullopt;
 }
 
 void BlameEditor::save() {

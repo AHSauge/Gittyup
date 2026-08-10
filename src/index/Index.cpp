@@ -47,8 +47,7 @@ Index::Index(const git::Repository &repo, QObject *parent)
   // Read log setting.
   sLoggingEnabled = QSettings().value(kLogKey).toBool();
 
-  // Clean up temporary files.
-  clean();
+  cleanTemporaryFiles();
 
   // Check version.
   if (readVersion() < version())
@@ -64,12 +63,15 @@ void Index::reset() {
   mIds.clear();
   mDict.clear();
 
+  git_oid_t id_type = mRepo.oidType();
+  uint8_t id_size = git::Id::getSize(id_type);
+
   // Read already indexed ids.
   QDir dir = indexDir();
   QFile idFile(dir.filePath(kIdFile));
   if (idFile.open(QIODevice::ReadOnly)) {
     while (idFile.bytesAvailable() > 0)
-      mIds.append(idFile.read(GIT_OID_SHA1));
+      mIds.append(git::Id(idFile.read(id_size), id_type));
   }
 
   // Read dictionary.
@@ -87,7 +89,7 @@ void Index::reset() {
   emit indexReset();
 }
 
-void Index::clean() {
+void Index::cleanTemporaryFiles() {
   QStringList filters;
   foreach (const QString &file, kIndexFiles)
     filters.append(file + ".*");
@@ -100,7 +102,7 @@ void Index::clean() {
   // Try to lock the index for writing.
   QLockFile lock(lockFile(mRepo));
   lock.setStaleLockTime(staleLockTime());
-  if (!lock.tryLock())
+  if (!lock.tryLock(1000))
     return;
 
   foreach (const QString &file, files)
@@ -124,7 +126,13 @@ bool Index::remove() {
   return true;
 }
 
-bool Index::write(PostingMap map) {
+/*!
+ * \brief Index::write
+ * Write postings to the related files (kIdFile, kPostFile, kProxFile,
+ * kDictFile) This is used by the indexer application not by gittyup. Gittyup
+ * just reads those files \param map \return
+ */
+bool Index::write(const PostingMap &map) {
   if (map.isEmpty())
     return false;
 
@@ -142,7 +150,7 @@ bool Index::write(PostingMap map) {
 
   // Write id file.
   foreach (const git::Id &id, mIds)
-    idFile.write(id.toByteArray(), GIT_OID_SHA1);
+    idFile.write(id.toByteArray(), id.getSize());
 
   // Merge new entries into existing postings file.
   // Write dictionary and postings files in lockstep.
@@ -151,15 +159,11 @@ bool Index::write(PostingMap map) {
   QDataStream dictOut(&dictFile);
 
   // Open existing postings file.
-  QDataStream postIn;
-  QFile postInFile(dir.filePath(kPostFile));
-  if (postInFile.open(QIODevice::ReadOnly))
-    postIn.setDevice(&postInFile);
+  MmapFileReader postInFile(dir.filePath(kPostFile));
+  postInFile.open();
 
-  QDataStream proxIn;
-  QFile proxInFile(dir.filePath(kProxFile));
-  if (proxInFile.open(QIODevice::ReadOnly))
-    proxIn.setDevice(&proxInFile);
+  MmapFileReader proxInFile(dir.filePath(kProxFile));
+  proxInFile.open();
 
   // Create a copy of the existing dictionary.
   Dictionary dict = mDict;
@@ -181,15 +185,15 @@ bool Index::write(PostingMap map) {
     } else {
       // Read existing postings.
       key = it->key;
-      quint32 postCount = readVInt(postIn);
+      quint32 postCount = postInFile.readVInt();
       bool end = (newIt == newEnd || newIt.key() != it->key);
       postings.reserve(postCount + (!end ? newIt.value().size() : 0));
       for (quint32 i = 0; i < postCount; ++i) {
         quint32 proxPos;
         Posting posting;
-        posting.id = readVInt(postIn);
-        postIn >> posting.field >> proxPos;
-        readPositions(proxIn, posting.positions);
+        posting.id = postInFile.readVInt();
+        postInFile >> posting.field >> proxPos;
+        readPositions(proxInFile, posting.positions);
         postings.append(posting);
       }
 
@@ -256,9 +260,13 @@ QList<git::Commit> Index::commits(const QList<Posting> &postings) const {
   // Look up commits.
   QSet<git::Commit> commits;
   foreach (const Posting &posting, postings) {
-    // FIXME: Remove deleted commits on write.
-    if (git::Commit commit = mRepo.lookupCommit(mIds.at(posting.id)))
-      commits.insert(commit);
+    // If we fail this check, then the index is mismatching the repo
+    // The FIXME below might be the cause of that
+    if (posting.id < mIds.size()) {
+      // FIXME: Remove deleted commits on write.
+      if (git::Commit commit = mRepo.lookupCommit(mIds.at(posting.id)))
+        commits.insert(commit);
+    }
   }
 
   return commits.values();
@@ -272,29 +280,27 @@ QList<Index::Posting> Index::postings(const Term &term, bool positional) const {
     return QList<Posting>();
 
   QDir dir = indexDir();
-  QFile file(dir.filePath(kPostFile));
-  if (!file.open(QIODevice::ReadOnly))
+  MmapFileReader file(dir.filePath(kPostFile));
+  if (!file.open())
     return QList<Posting>();
 
-  QFile proxFile;
+  MmapFileReader proxFile(dir.filePath(kProxFile));
   if (positional) {
-    proxFile.setFileName(dir.filePath(kProxFile));
-    if (!proxFile.open(QIODevice::ReadOnly))
+    if (!proxFile.open())
       return QList<Posting>();
   }
 
   // Skip to the correct entry.
   file.seek(it->value);
-  QDataStream in(&file);
 
   // Read list.
   QList<Posting> postings;
-  quint32 postCount = readVInt(in);
+  quint32 postCount = file.readVInt();
   for (quint32 i = 0; i < postCount; ++i) {
     quint32 proxPos;
     Posting posting;
-    posting.id = readVInt(in);
-    in >> posting.field >> proxPos;
+    posting.id = file.readVInt();
+    file >> posting.field >> proxPos;
 
     // Filter by field.
     quint8 field = posting.field & 0x0F;
@@ -303,8 +309,7 @@ QList<Index::Posting> Index::postings(const Term &term, bool positional) const {
       // Load positions when needed.
       if (positional) {
         proxFile.seek(proxPos);
-        QDataStream proxIn(&proxFile);
-        readPositions(proxIn, posting.positions);
+        readPositions(proxFile, posting.positions);
       }
 
       postings.append(posting);
@@ -317,8 +322,8 @@ QList<Index::Posting> Index::postings(const Term &term, bool positional) const {
 QList<Index::Posting> Index::postings(const Predicate &pred,
                                       Field field) const {
   QDir dir = indexDir();
-  QFile file(dir.filePath(kPostFile));
-  if (!file.open(QIODevice::ReadOnly))
+  MmapFileReader file(dir.filePath(kPostFile));
+  if (!file.open())
     return QList<Posting>();
 
   QList<Posting> postings;
@@ -329,15 +334,14 @@ QList<Index::Posting> Index::postings(const Predicate &pred,
 
     // Skip to the correct entry.
     file.seek(word.value);
-    QDataStream in(&file);
 
     // Read list.
-    quint32 postCount = readVInt(in);
+    quint32 postCount = file.readVInt();
     for (quint32 i = 0; i < postCount; ++i) {
       quint32 proxPos;
       Posting posting;
-      posting.id = readVInt(in);
-      in >> posting.field >> proxPos;
+      posting.id = file.readVInt();
+      file >> posting.field >> proxPos;
 
       // Match field.
       quint8 postField = posting.field & 0x0F;
@@ -352,8 +356,8 @@ QList<Index::Posting> Index::postings(const Predicate &pred,
 
 QMap<Index::Field, QStringList> Index::fieldMap(const QString &prefix) const {
   QDir dir = indexDir();
-  QFile file(dir.filePath(kPostFile));
-  if (!file.open(QIODevice::ReadOnly))
+  MmapFileReader file(dir.filePath(kPostFile));
+  if (!file.open())
     return QMap<Field, QStringList>();
 
   Dictionary::const_iterator it = mDict.constBegin();
@@ -370,16 +374,15 @@ QMap<Index::Field, QStringList> Index::fieldMap(const QString &prefix) const {
   while (it != end) {
     // Skip to the correct entry.
     file.seek(it->value);
-    QDataStream in(&file);
 
     // Read list.
     QString name = it->key;
-    quint32 postCount = readVInt(in);
+    quint32 postCount = file.readVInt();
     for (quint32 i = 0; i < postCount; ++i) {
       quint8 field;
       quint32 proxPos;
-      readVInt(in); // Discard id.
-      in >> field >> proxPos;
+      file.readVInt(); // Discard id.
+      file >> field >> proxPos;
 
       QStringList &fieldList = map[static_cast<Field>(field & 0x0F)];
       if (fieldList.isEmpty() || fieldList.last() != name)
@@ -476,22 +479,6 @@ void Index::writeVersion() const {
     QDataStream(&file) << version();
 }
 
-// Use the same variable length VInt encoding as Lucene.
-quint32 Index::readVInt(QDataStream &in) {
-  // Read least significant byte.
-  quint8 byte;
-  in >> byte;
-  quint32 result = byte & 0x7F;
-
-  // Continue reading more significant bytes.
-  for (quint32 shift = 7; byte & 0x80; shift += 7) {
-    in >> byte;
-    result |= (byte & 0x7F) << shift;
-  }
-
-  return result;
-}
-
 void Index::writeVInt(QDataStream &out, quint32 arg) {
   // Write less significant bytes first.
   // Most significant bit is set.
@@ -506,13 +493,13 @@ void Index::writeVInt(QDataStream &out, quint32 arg) {
 }
 
 // Write deltas to minimize bytes per position.
-void Index::readPositions(QDataStream &in, QVector<quint32> &positions) {
+void Index::readPositions(MmapFileReader &in, QVector<quint32> &positions) {
   quint32 prev = 0;
-  quint32 count = readVInt(in);
+  quint32 count = in.readVInt();
   positions.reserve(count);
   for (quint32 i = 0; i < count; ++i) {
     // Convert to absolute from delta.
-    quint32 position = prev + readVInt(in);
+    quint32 position = prev + in.readVInt();
     positions.append(position);
     prev = position;
   }

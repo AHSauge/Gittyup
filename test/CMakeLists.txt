@@ -23,7 +23,7 @@ macro(test)
   endif()
 
   if(WIN32)
-    find_package(Qt6Gui)
+    find_package(Qt6Gui 6.6)
     string(REPLACE ";" "\;" NEWPATH "$ENV{PATH}")
     string(REPLACE ";" "\;" PLUGIN_PATH
                    "$<TARGET_FILE_DIR:Qt6::QOffscreenIntegrationPlugin>")
@@ -65,8 +65,6 @@ add_custom_target(
   DEPENDS check_build
   COMMENT "Running tests..."
   USES_TERMINAL)
-
-enable_testing()
 
 # Add test library.
 set(CMAKE_DISABLE_TESTING ON)

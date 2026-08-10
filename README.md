@@ -62,7 +62,7 @@ Build Environment
   * Windows - MSVC >= 2017 recommended
   * Linux - GCC >= 6.2 recommended
   * macOS - Xcode >= 10.1 recommended
-* CMake >= 3.3.1
+* CMake >= 3.19
 * Ninja (optional)
 
 Dependencies
@@ -74,7 +74,7 @@ submodules are optional or may also be satisfied by system libraries.
 
 **External Dependencies**
 
-* Qt (required >= 5.12)
+* Qt (required >= 6.6)
 
 **Included Dependencies**
 
@@ -200,8 +200,7 @@ adheres to the formatting conventions for this project. You can also use the
 run `clang-format` against all modified files.
 
 Prior to pushing a change, please ensure you run the unit tests to avoid any
-regressions. These are found in `<build-dir>/test` and can be run using
-`ctest`.
+regressions. These are run using `ctest` in `<build-dir>`.
 
 License
 -------

@@ -41,7 +41,7 @@ const QString kFromToFmt = "%1 -> %2";
 const QString kUpdateFmt = " %1 %2 %3";
 const QString kLinkFmt = "<a href='%1'>%2</a>";
 
-QString size(int bytes) {
+QString size(size_t bytes) {
   if (bytes < kKb)
     return kSizeFmt.arg(bytes).arg("bytes");
 
@@ -410,7 +410,7 @@ void RemoteCallbacks::sidebandImpl(const QString &text, const QString &fmt) {
   }
 }
 
-void RemoteCallbacks::transferImpl(int total, int current, int bytes,
+void RemoteCallbacks::transferImpl(int total, int current, size_t bytes,
                                    int elapsed) {
   // Change state to resolve.
   if (current == total)
@@ -424,7 +424,7 @@ void RemoteCallbacks::transferImpl(int total, int current, int bytes,
 
   // Calculate the transfer rate.
   float seconds = static_cast<float>(qMax(elapsed, 1)) / 1000;
-  int transferRate = (bytes - mBytesReceived) / seconds;
+  auto transferRate = (bytes - mBytesReceived) / seconds;
   mBytesReceived = bytes;
 
   // Write text.

@@ -110,6 +110,7 @@ QMap<git_repository *, QWeakPointer<Repository::Data>> Repository::registry;
 Repository::Data::Data(git_repository *repo)
     : repo(repo), notifier(new RepositoryNotifier) {
   // Load starred commits.
+  git_oid_t hash_type = git_repository_oid_type(repo);
   QDir dir(git_repository_path(repo));
   QFile file(appDir(dir).filePath(kStarFile));
   if (!file.open(QIODevice::ReadOnly))
@@ -120,7 +121,7 @@ Repository::Data::Data(git_repository *repo)
     return;
 
   foreach (const QByteArray &id, ids.split('\n'))
-    starredCommits.insert(QByteArray::fromHex(id));
+    starredCommits.insert(git::Id(QByteArray::fromHex(id), hash_type));
 }
 
 Repository::Data::~Data() {
@@ -200,6 +201,10 @@ Config Repository::appConfig() const {
   QString path = appDir().filePath(kConfigFile);
   config.addFile(path, GIT_CONFIG_LEVEL_LOCAL, d->repo);
   return config;
+}
+
+git_oid_t Repository::oidType() const {
+  return git_repository_oid_type(d->repo);
 }
 
 bool Repository::isBare() const { return git_repository_is_bare(d->repo); }
@@ -338,7 +343,10 @@ Diff Repository::diffIndexToWorkdir(const Index &index,
                                     Diff::Callbacks *callbacks,
                                     bool ignoreWhitespace) const {
   git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
-  opts.flags |= (GIT_DIFF_INCLUDE_TYPECHANGE | GIT_DIFF_DISABLE_MMAP);
+  opts.flags |= GIT_DIFF_INCLUDE_TYPECHANGE;
+#ifndef USE_SYSTEM_LIBGIT2
+  opts.flags |= GIT_DIFF_DISABLE_MMAP;
+#endif
 
   if (!appConfig().value<bool>("untracked.hide", false))
     opts.flags |= GIT_DIFF_INCLUDE_UNTRACKED | GIT_DIFF_RECURSE_UNTRACKED_DIRS;
@@ -857,10 +865,12 @@ Blame Repository::blame(const QString &name, const Commit &from,
   git_blame_options options = GIT_BLAME_OPTIONS_INIT;
   if (from.isValid()) // Set start commit.
     options.newest_commit = *git_commit_id(from);
+#ifndef USE_SYSTEM_LIBGIT2
   if (callbacks) {
     options.progress_cb = blame_progress;
     options.payload = callbacks;
   }
+#endif
   git_blame_file(&blame, d->repo, name.toUtf8(), &options);
   return Blame(blame, d->repo);
 }
@@ -1019,7 +1029,10 @@ bool Repository::checkout(const Commit &commit, CheckoutCallbacks *callbacks,
   QVector<QByteArray> storage;
   if (!paths.isEmpty()) {
     // Paths are assumed to be exact matches.
-    opts.checkout_strategy |= GIT_CHECKOUT_DISABLE_PATHSPEC_MATCH;
+    opts.checkout_strategy |=
+        GIT_CHECKOUT_DISABLE_PATHSPEC_MATCH |
+        GIT_CHECKOUT_UPDATE_SUBMODULES; // GIT_CHECKOUT_UPDATE_SUBMODULES is not
+                                        // yet implemented from libgit2
 
     foreach (const QString &path, paths) {
       storage.append(path.toUtf8());

@@ -5,8 +5,9 @@ project(Gittyup)
 set(GITTYUP_NAME "Gittyup")
 set(GITTYUP_EXECUTABLE_NAME "gittyup")
 set(GITTYUP_IDENTIFIER "com.github.Murmele.Gittyup")
-set(GITTYUP_VERSION_MAJOR 1)
-set(GITTYUP_VERSION_MINOR 4)
+set(GITTYUP_ORGANIZATION_DOMAIN "Murmele.github.com")
+set(GITTYUP_VERSION_MAJOR 2)
+set(GITTYUP_VERSION_MINOR 0)
 set(GITTYUP_VERSION_PATCH 0)
 set(GITTYUP_VERSION
     "${GITTYUP_VERSION_MAJOR}.${GITTYUP_VERSION_MINOR}.${GITTYUP_VERSION_PATCH}"
@@ -62,6 +63,16 @@ option(USE_SYSTEM_QT "Don't copy QT files into the installation directory" ON)
 option(USE_SYSTEM_CMARK "Use the system-wide cmark installation" OFF)
 option(ENABLE_TESTS "Enable Gittyup Unittests" ON)
 
+# Typically system libgit2 does NOT have experimental settings enabled, hence we
+# need to disable SHA256 support
+if(USE_SYSTEM_LIBGIT2)
+  set(_DEFAULT_ENABLE_SHA256 OFF)
+else()
+  set(_DEFAULT_ENABLE_SHA256 ON)
+endif()
+option(ENABLE_SHA256 "Enable SHA256 support within Gittyup"
+       ${_DEFAULT_ENABLE_SHA256})
+
 set(LUA_MODULES_PATH
     CACHE
       PATH
@@ -80,18 +91,11 @@ if(HAIKU)
   # qsort_r in libgit2 requires this
   set(CMAKE_EXE_LINKER_FLAGS -lgnu)
 elseif(UNIX AND NOT APPLE)
-  set(CMAKE_EXE_LINKER_FLAGS -ldl)
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -ldl")
 endif()
 
 # Find Qt modules.
-set(QT_MODULES
-    Concurrent
-    Core
-    Gui
-    Network
-    PrintSupport
-    Widgets
-    Test)
+set(QT_MODULES Concurrent Core Gui Network Widgets Test)
 
 if(UNIX)
   set(QT_MODULES ${QT_MODULES} DBus)
@@ -114,7 +118,7 @@ else()
 endif()
 
 find_package(
-  Qt6
+  Qt6 6.6
   COMPONENTS ${QT_MODULES} LinguistTools
   REQUIRED)
 if(FLATPAK)
@@ -127,6 +131,14 @@ endif()
 
 if(DEBUG_FLATPAK)
   add_compile_definitions(DEBUG_FLATPAK)
+endif()
+
+if(ENABLE_SHA256)
+  add_compile_definitions(GIT_EXPERIMENTAL_SHA256)
+endif()
+
+if(USE_SYSTEM_LIBGIT2)
+  add_compile_definitions(USE_SYSTEM_LIBGIT2)
 endif()
 
 include(GNUInstallDirs) # Defines some variables as BINDIR, LIBDIR, ...
@@ -170,5 +182,6 @@ add_subdirectory(l10n)
 add_subdirectory(pack)
 
 if(ENABLE_TESTS)
+  enable_testing()
   add_subdirectory(test)
 endif()

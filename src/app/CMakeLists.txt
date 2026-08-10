@@ -62,6 +62,7 @@ target_compile_definitions(
   PUBLIC GITTYUP_NAME="${GITTYUP_NAME}"
          GITTYUP_VERSION="${GITTYUP_VERSION}"
          GITTYUP_IDENTIFIER="${GITTYUP_IDENTIFIER}"
+         GITTYUP_ORGANIZATION_DOMAIN="${GITTYUP_ORGANIZATION_DOMAIN}"
          GITTYUP_DBUS_INTERFACE_NAME="${GITTYUP_IDENTIFIER}.Application"
          GITTYUP_DBUS_OBJECT_PATH="/com/github/Murmele/Gittyup/Application"
   PRIVATE QT_TRANSLATIONS_DIR="${QT_TRANSLATIONS_DIR}"
@@ -105,7 +106,8 @@ if(GENERATE_APPDATA)
     appdata ALL
     COMMAND
       ${CMAKE_COMMAND} -DCHANGELOG_HTML:STRING=${CHANGELOG_HTML}
-      -DAPPDATA_CONF:STRING=${APPDATA_CONF} -DAPPDATA:STRING=${APPDATA} -P
+      -DAPPDATA_CONF:STRING=${APPDATA_CONF} -DAPPDATA:STRING=${APPDATA}
+      -DGITTYUP_IDENTIFIER:STRING=${GITTYUP_IDENTIFIER} -P
       "${CMAKE_SOURCE_DIR}/cmake/generate_appdata.cmake"
     DEPENDS ${CHANGELOG_HTML}
     COMMENT "Create appdata file")
@@ -163,7 +165,7 @@ else()
   endif()
 endif()
 
-add_dependencies(gittyup indexer relauncher)
+add_dependencies(gittyup gittyup-indexer gittyup-relauncher)
 
 install(
   TARGETS gittyup
@@ -176,7 +178,7 @@ if(APPLE)
   get_filename_component(RPATH ${QT_FRAMEWORK} DIRECTORY)
 
   # Fixup relauncher RPATH.
-  set(RELAUNCHER ${CONTENTS_DIR}/MacOS/relauncher)
+  set(RELAUNCHER ${CONTENTS_DIR}/MacOS/gittyup-relauncher)
   install(
     CODE "execute_process(COMMAND
 		${CMAKE_INSTALL_NAME_TOOL} -delete_rpath \"${RPATH}\"
@@ -193,7 +195,7 @@ execute_process(COMMAND
     COMPONENT ${GITTYUP_NAME})
 
   # Fixup indexer RPATH.
-  set(INDEXER ${CONTENTS_DIR}/MacOS/indexer)
+  set(INDEXER ${CONTENTS_DIR}/MacOS/gittyup-indexer)
   install(
     CODE "execute_process(COMMAND
 		${CMAKE_INSTALL_NAME_TOOL} -delete_rpath \"${RPATH}\"
