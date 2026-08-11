@@ -201,7 +201,7 @@ void BlameEditor::save() {
 
     // Set editor lexer.
     mEditor->setLexer(path);
-    mEditor->startStyling(0);
+    mEditor->startStyling(0, 0);
   }
 
   QSaveFile file(path);
@@ -211,7 +211,7 @@ void BlameEditor::save() {
   QTextStream out(&file);
   if (mRepo.isValid())
     out.setEncoding(mRepo.encoding());
-  out << mEditor->text();
+  out << mEditor->getText(mEditor->textLength());
   file.commit();
 
   mEditor->setSavePoint();
