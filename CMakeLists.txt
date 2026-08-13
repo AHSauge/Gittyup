@@ -96,7 +96,7 @@ else()
       CACHE BOOL "Use ssh")
   find_pkglibraries(LIBSSH2 libssh2)
   if(NOT LIBSSH2_FOUND)
-    find_package(libssh2 REQUIRED)
+    find_package(libssh2 1.11 REQUIRED)
   endif()
 endif()
 
@@ -109,18 +109,11 @@ if(HAIKU)
   # qsort_r in libgit2 requires this
   set(CMAKE_EXE_LINKER_FLAGS -lgnu)
 elseif(UNIX AND NOT APPLE)
-  set(CMAKE_EXE_LINKER_FLAGS -ldl)
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -ldl")
 endif()
 
 # Find Qt modules.
-set(QT_MODULES
-    Concurrent
-    Core
-    Gui
-    Network
-    PrintSupport
-    Widgets
-    Test)
+set(QT_MODULES Concurrent Core Gui Network Widgets Test)
 
 if(UNIX)
   set(QT_MODULES ${QT_MODULES} DBus)
@@ -143,7 +136,7 @@ else()
 endif()
 
 find_package(
-  Qt6
+  Qt6 6.6
   COMPONENTS ${QT_MODULES} LinguistTools
   REQUIRED)
 if(FLATPAK)
@@ -202,5 +195,6 @@ add_subdirectory(l10n)
 add_subdirectory(pack)
 
 if(ENABLE_TESTS)
+  enable_testing()
   add_subdirectory(test)
 endif()
