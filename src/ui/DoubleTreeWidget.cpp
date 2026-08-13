@@ -325,7 +325,7 @@ void DoubleTreeWidget::showFileContextMenu(const QPoint &pos, RepoView *view,
     return;
 
   const bool statusDiff = diff.isStatusDiff();
-  foreach (const QModelIndex &index, indexes) {
+  for (const QModelIndex &index : indexes) {
     auto node = index.data(Qt::UserRole).value<Node *>();
 
     addNodeToMenu(view->repo().index(), files, node, staged, statusDiff);
@@ -503,7 +503,7 @@ void DoubleTreeWidget::storeSelection() {
 
 void DoubleTreeWidget::loadSelection() {
   QModelIndex index;
-  Qt::CheckState state;
+  Qt::CheckState state = Qt::Unchecked;
 
   if (mSelectedFile.filename != "") {
     index = mDiffTreeModel->index(mSelectedFile.filename);
