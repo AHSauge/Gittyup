@@ -390,7 +390,7 @@ FileWidget::FileWidget(DiffView *view, const git::Diff &diff,
         return;
       }
 
-      foreach (HunkWidget *hunk, mHunks)
+      for (HunkWidget *hunk : mHunks)
         hunk->setVisible(visible);
     });
 

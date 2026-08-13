@@ -148,7 +148,7 @@ bool BlameEditor::load(const QString &name, const git::Blob &blob,
     git::Buffer buffer(content.constData(), content.length());
     if (buffer.isBinary()) {
       return false;
-    } else if (content.length() >= kMaxReadBinary) {
+    } else if (static_cast<size_t>(content.length()) >= kMaxReadBinary) {
       // Okay, not a binary file. Now we need to grab the rest if needed
       content += file.readAll();
     }
