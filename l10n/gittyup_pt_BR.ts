@@ -406,18 +406,18 @@
 <context>
     <name>AuthorCommitterDate</name>
     <message>
-        <location filename="../src/ui/DetailView.cpp" line="181"/>
-        <source>Author/Committer: </source>
+        <location filename="../src/ui/DetailView.cpp" line="178"/>
+        <source>Author/Committer: %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/ui/DetailView.cpp" line="185"/>
-        <source>Author: </source>
+        <location filename="../src/ui/DetailView.cpp" line="182"/>
+        <source>Author: %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/ui/DetailView.cpp" line="187"/>
-        <source>Committer: </source>
+        <location filename="../src/ui/DetailView.cpp" line="184"/>
+        <source>Committer: %1</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
