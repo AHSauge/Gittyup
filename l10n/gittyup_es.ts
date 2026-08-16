@@ -1035,12 +1035,7 @@
     </message>
     <message>
         <location filename="../src/cred/CredentialHelper.cpp" line="87"/>
-        <source>Secret Service D-Bus client library</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/cred/CredentialHelper.cpp" line="94"/>
-        <source>Prefer &lt;a href=&quot;https://wiki.gnome.org/Projects/Libsecret&quot;&gt;libsecret&lt;/a&gt; over gnome-keyring if available</source>
+        <source>Store credentials via Secret Service D-Bus (GNOME Keyring, KDE Wallet, or similar)</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
