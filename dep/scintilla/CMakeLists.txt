@@ -1,6 +1,16 @@
 include(FetchContent)
-FetchContent_Declare(scintilla URL https://www.scintilla.org/scintilla566.tgz
-                                   DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+# Sandboxed builds (e.g. Flatpak) have no network access during the CMake
+# configure step, so they pre-fetch scintilla into scintilla as an offline
+# source instead. When present, use it directly instead of downloading.
+set(SCINTILLA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/scintilla)
+if(EXISTS ${SCINTILLA_DIR}/include/Scintilla.h)
+  set(FETCHCONTENT_SOURCE_DIR_SCINTILLA ${SCINTILLA_DIR})
+endif()
+FetchContent_Declare(
+  scintilla
+  URL https://downloads.sourceforge.net/project/scintilla/scintilla/5.6.6/scintilla566.tgz
+      DOWNLOAD_EXTRACT_TIMESTAMP
+      TRUE)
 FetchContent_MakeAvailable(scintilla)
 
 set(LEXILLA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lexilla)
