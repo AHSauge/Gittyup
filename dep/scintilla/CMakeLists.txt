@@ -1,5 +1,10 @@
+include(FetchContent)
+FetchContent_Declare(scintilla URL https://www.scintilla.org/scintilla566.tgz
+                                   DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+FetchContent_MakeAvailable(scintilla)
+
 set(LEXILLA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lexilla)
-set(SCINTILLA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/scintilla)
+set(SCINTILLA_DIR ${scintilla_SOURCE_DIR})
 set(SCINTILLUA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/scintillua)
 
 add_library(

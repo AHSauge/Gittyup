@@ -346,7 +346,7 @@ HunkWidget::HunkWidget(DiffView *view, const git::Diff &diff,
         for (int i = 0; i < diags.size(); ++i) {
           const TextEditor::Diagnostic &diag = diags.at(i);
 
-              QStyle::StandardPixmap pixmap = QStyle::NStandardPixmap;
+          QStyle::StandardPixmap pixmap = QStyle::NStandardPixmap;
           switch (diag.kind) {
             case TextEditor::Note:
               pixmap = QStyle::SP_MessageBoxInformation;
