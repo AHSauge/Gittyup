@@ -159,7 +159,7 @@ DoubleTreeWidget::DoubleTreeWidget(const git::Repository &repo, QWidget *parent)
 
   stagedFiles->setModel(new TreeProxy(true, mDiffTreeModel, this));
   connect(stagedFiles, &QAbstractItemView::doubleClicked,
-          [this, repoView](const QModelIndex &index) {
+          [repoView](const QModelIndex &index) {
             openExternalDiffTool(index, repoView, true);
           });
 
@@ -189,7 +189,7 @@ DoubleTreeWidget::DoubleTreeWidget(const git::Repository &repo, QWidget *parent)
 
   unstagedFiles->setModel(new TreeProxy(false, mDiffTreeModel, this));
   connect(unstagedFiles, &QAbstractItemView::doubleClicked,
-          [this, repoView](const QModelIndex &index) {
+          [repoView](const QModelIndex &index) {
             openExternalDiffTool(index, repoView, false);
           });
 

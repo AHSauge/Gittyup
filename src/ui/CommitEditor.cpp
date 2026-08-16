@@ -342,9 +342,7 @@ CommitEditor::CommitEditor(const git::Repository &repo, QWidget *parent)
 
   // Sort menu entries alphabetical.
   std::sort(actionList.begin(), actionList.end(),
-            [actionList](QAction *la, QAction *ra) {
-              return la->text() < ra->text();
-            });
+            [](QAction *la, QAction *ra) { return la->text() < ra->text(); });
 
   QActionGroup *dictActionGroup = new QActionGroup(this);
   dictActionGroup->setExclusive(true);

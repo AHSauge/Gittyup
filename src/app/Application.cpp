@@ -325,6 +325,8 @@ bool Application::restoreWindows() {
   return MainWindow::restoreWindows();
 }
 
+// Currently unused on MacOS
+#if defined(Q_OS_LINUX) || defined(Q_OS_WIN)
 static MainWindow *openOrSwitch(QDir repo) {
   repo.makeAbsolute();
 
@@ -345,6 +347,7 @@ static MainWindow *openOrSwitch(QDir repo) {
 
   return MainWindow::open(repo.path(), true);
 }
+#endif
 
 #if defined(Q_OS_LINUX)
 #define DBUS_SERVICE_NAME GITTYUP_IDENTIFIER
