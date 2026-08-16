@@ -1,3 +1,4 @@
-To update to a new version, download the source from
-https://www.scintilla.org/ScintillaHistory.html
-and replace it with the current
+Scintilla is fetched automatically by CMake (see `FetchContent_Declare(scintilla ...)`
+in CMakeLists.txt). To update to a new version, check
+https://www.scintilla.org/ScintillaHistory.html for the latest release and
+update the URL's version number accordingly.
