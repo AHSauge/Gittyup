@@ -24,8 +24,8 @@
 #include <QWizard>
 #include <QLineEdit>
 
-#define INIT_REPO(repoPath, /* bool */ useTempDir)                             \
-  QString path = Test::extractRepository(repoPath, useTempDir);                \
+#define INIT_REPO(repoPath)                                                    \
+  QString path = Test::extractRepository(repoPath);                            \
   QVERIFY(!path.isEmpty());                                                    \
   auto repo = git::Repository::open(path);                                     \
   QVERIFY(repo.isValid());                                                     \
@@ -53,7 +53,7 @@ private:
 
 void TestSubmodule::updateSubmoduleClone() {
   // Update submodules after cloning
-  QString remote = Test::extractRepository("SubmoduleTest.zip", true);
+  QString remote = Test::extractRepository("SubmoduleTest.zip");
   QCOMPARE(remote.isEmpty(), false);
 
   Settings *settings = Settings::instance();
@@ -94,7 +94,7 @@ void TestSubmodule::updateSubmoduleClone() {
 
 void TestSubmodule::noUpdateSubmoduleClone() {
   // Don't update submodules after cloning
-  QString remote = Test::extractRepository("SubmoduleTest.zip", true);
+  QString remote = Test::extractRepository("SubmoduleTest.zip");
   QCOMPARE(remote.isEmpty(), false);
 
   Settings *settings = Settings::instance();
@@ -135,7 +135,7 @@ void TestSubmodule::noUpdateSubmoduleClone() {
 
 void TestSubmodule::discardFile() {
   // Discarding a file should not reset the submodule
-  INIT_REPO("SubmoduleTest.zip", true);
+  INIT_REPO("SubmoduleTest.zip");
   repoView->updateSubmodules(repo.submodules(), true, true);
 
   qWait(1000); // Not needed if the test is long enough and the fetch operation
