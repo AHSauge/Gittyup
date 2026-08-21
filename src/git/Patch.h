@@ -15,7 +15,7 @@
 #include "git/Commit.h"
 #include "git2/patch.h"
 #include <QBitArray>
-#include <QSharedPointer>
+#include <memory>
 
 namespace git {
 
@@ -34,7 +34,7 @@ public:
 
   Patch();
 
-  bool isValid() const { return !d.isNull(); }
+  bool isValid() const { return d != nullptr; }
 
   Repository repo() const;
 
@@ -169,7 +169,7 @@ private:
 
   Patch(git_patch *patch);
 
-  QSharedPointer<git_patch> d;
+  std::shared_ptr<git_patch> d;
   QList<ConflictHunk> mConflicts;
 
   friend class Diff;

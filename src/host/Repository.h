@@ -13,7 +13,6 @@
 #include <QObject>
 #include <QMap>
 #include <QMetaType>
-#include <QSharedPointer>
 #include <QString>
 
 class Account;

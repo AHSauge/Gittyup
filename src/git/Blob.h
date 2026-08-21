@@ -12,6 +12,8 @@
 
 #include "Object.h"
 #include "git2/blob.h"
+#include <QByteArray>
+#include <QMetaType>
 
 namespace git {
 

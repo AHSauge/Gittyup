@@ -14,7 +14,7 @@
 #include "Index.h"
 #include "git2/diff.h"
 #include <QFlags>
-#include <QSharedPointer>
+#include <memory>
 
 /*!
  * \brief containsPath
@@ -108,7 +108,7 @@ private:
   operator git_diff *() const;
   void setIndex(const Index &index);
 
-  QSharedPointer<Data> d;
+  std::shared_ptr<Data> d;
 
   friend class Commit;
   friend class Repository;

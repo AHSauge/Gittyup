@@ -13,7 +13,7 @@
 #include "Remote.h"
 #include "Result.h"
 #include "git2/submodule.h"
-#include <QSharedPointer>
+#include <memory>
 
 namespace git {
 
@@ -24,7 +24,7 @@ class Submodule {
 public:
   Submodule();
 
-  bool isValid() const { return !d.isNull(); }
+  bool isValid() const { return d != nullptr; }
   explicit operator bool() const { return isValid(); }
 
   bool isInitialized() const;
@@ -53,7 +53,7 @@ private:
   Submodule(git_submodule *submodule);
   operator git_submodule *() const;
 
-  QSharedPointer<git_submodule> d;
+  std::shared_ptr<git_submodule> d;
 
   friend class Index;
   friend class Repository;

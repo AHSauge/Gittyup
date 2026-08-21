@@ -10,7 +10,8 @@
 #ifndef REBASE_H
 #define REBASE_H
 
-#include <QSharedPointer>
+#include <QString>
+#include <memory>
 
 // TODO: move to cpp again, forward declaration should be enough
 #include "git2/rebase.h"
@@ -24,7 +25,7 @@ class Commit;
 
 class Rebase {
 public:
-  bool isValid() const { return !d.isNull(); }
+  bool isValid() const { return d != nullptr; }
 
   size_t count() const;
   size_t currentIndex() const;
@@ -44,7 +45,7 @@ private:
          const QString &overrideEmail = QString());
 
   git_repository *mRepo;
-  QSharedPointer<git_rebase> d;
+  std::shared_ptr<git_rebase> d;
   QString mOverrideUser;
   QString mOverrideEmail;
 

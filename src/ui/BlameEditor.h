@@ -16,7 +16,6 @@
 #include "git/Commit.h"
 #include "git/Repository.h"
 #include <QFutureWatcher>
-#include <QScopedPointer>
 #include <QWidget>
 
 class BlameMargin;
@@ -66,7 +65,7 @@ private:
   QString mName;
   QString mRevision;
 
-  QScopedPointer<git::Blame::Callbacks> mCallbacks;
+  std::unique_ptr<git::Blame::Callbacks> mCallbacks;
   QFutureWatcher<git::Blame> mBlame;
 };
 

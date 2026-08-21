@@ -34,19 +34,19 @@ Branch::Branch() : Reference() {}
 
 Branch::Branch(git_reference *ref) : Reference(ref) {
   if (isValid() && !isBranch())
-    d.clear();
+    d.reset();
 }
 
 Branch::Branch(const Reference &rhs) : Reference(rhs) {
   if (isValid() && !isBranch())
-    d.clear();
+    d.reset();
 }
 
 Branch Branch::upstream() const {
   Q_ASSERT(isLocalBranch());
 
   git_reference *ref = nullptr;
-  git_branch_upstream(&ref, d.data());
+  git_branch_upstream(&ref, d.get());
   return Branch(ref);
 }
 
@@ -58,7 +58,7 @@ void Branch::setUpstream(const Branch &upstream) {
     buffer = upstream.name().toUtf8();
 
   const char *name = !buffer.isEmpty() ? buffer.constData() : nullptr;
-  git_branch_set_upstream(d.data(), name);
+  git_branch_set_upstream(d.get(), name);
 
   emit repo().notifier()->referenceUpdated(*this);
 }
@@ -84,7 +84,7 @@ Remote Branch::remote() const {
   }
 
   git_buf buf = GIT_BUF_INIT;
-  git_repository *repo = git_reference_owner(d.data());
+  git_repository *repo = git_reference_owner(d.get());
   if (git_branch_remote_name(&buf, repo, qualifiedName().toUtf8()))
     return Remote();
 
@@ -102,11 +102,11 @@ Branch Branch::rename(const QString &name) {
   Q_ASSERT(isLocalBranch());
 
   git_reference *ref = nullptr;
-  if (git_branch_move(&ref, d.data(), name.toUtf8(), false))
+  if (git_branch_move(&ref, d.get(), name.toUtf8(), false))
     return Branch();
 
   // Invalidate this branch.
-  d.clear();
+  d.reset();
 
   Branch branch(ref);
   emit branch.repo().notifier()->referenceUpdated(branch);
@@ -120,8 +120,8 @@ void Branch::remove(bool force) {
   Repository repo = this->repo();
   emit repo.notifier()->referenceAboutToBeRemoved(*this);
 
-  if (force ? git_reference_delete(d.data()) : git_branch_delete(d.data()))
-    d.clear(); // Invalidate this branch.
+  if (force ? git_reference_delete(d.get()) : git_branch_delete(d.get()))
+    d.reset(); // Invalidate this branch.
 
   // We have to notify even if removal failed and the branch is still valid.
   // Clients can check this branch to see if the branch was really removed.
@@ -152,7 +152,7 @@ AnnotatedCommit Branch::annotatedCommitFromFetchHead() const {
   git_annotated_commit *head = nullptr;
   QByteArray url = remote.url().toUtf8();
   QByteArray name = qualifiedName().toUtf8();
-  git_repository *repo = git_reference_owner(d.data());
+  git_repository *repo = git_reference_owner(d.get());
   if (git_annotated_commit_from_fetchhead(&head, repo, name, url, commit))
     return AnnotatedCommit();
 

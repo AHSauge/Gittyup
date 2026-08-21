@@ -13,7 +13,6 @@
 #include "Repository.h"
 #include <QNetworkAccessManager>
 #include <QObject>
-#include <QSharedPointer>
 #include <QString>
 #include <QTimer>
 #include <qnetworkreply.h>

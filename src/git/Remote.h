@@ -16,7 +16,7 @@
 #include "git2/proxy.h"
 #include <QSet>
 #include <QString>
-#include <QSharedPointer>
+#include <memory>
 
 struct git_cred;
 struct git_oid;
@@ -130,7 +130,7 @@ public:
 
   Remote();
 
-  bool isValid() const { return !d.isNull(); }
+  bool isValid() const { return d != nullptr; }
   explicit operator bool() const { return isValid(); }
 
   QString name() const;
@@ -157,7 +157,7 @@ public:
 private:
   Remote(git_remote *remote);
 
-  QSharedPointer<git_remote> d;
+  std::shared_ptr<git_remote> d;
 
   friend class Branch;
   friend class Repository;
