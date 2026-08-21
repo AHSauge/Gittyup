@@ -109,8 +109,12 @@ void TestInitRepo::addFile() {
   QTextStream(&file) << "This is a test.";
   file.close();
 
-  // Check for a single file called "test".
+  // Trigger a refresh explicitly instead of waiting the RepositoryWatcher to
+  // catch it
   RepoView *view = mWindow->currentView();
+  refresh(view);
+
+  // Check for a single file called "test".
   auto doubleTree = view->findChild<DoubleTreeWidget *>();
   QVERIFY(doubleTree);
 
@@ -123,7 +127,7 @@ void TestInitRepo::addFile() {
     // Wait for refresh
     auto timeout = Timeout(10000, "Repository didn't refresh in time");
     while (model->rowCount() < 1)
-      qWait(300);
+      qWait(10);
   }
 
   QCOMPARE(model->rowCount(), 1);
@@ -146,9 +150,6 @@ void TestInitRepo::amendCommit() {
   RepoView *view = mWindow->currentView();
   QVERIFY(view);
 
-  bool finished = false;
-  connect(view, &RepoView::statusChanged, [&finished]() { finished = true; });
-
   view->amendCommit();
 
   auto dialog = view->findChild<AmendDialog *>();
@@ -156,23 +157,29 @@ void TestInitRepo::amendCommit() {
   dialog->findChild<QTextEdit *>()->setText("Some other commit message");
   dialog->accept();
 
-  qWait(300);
-
-  {
-    auto timeout =
-        Timeout(10000, "Repository didn't detect status change in time");
-    while (!finished)
-      qWait(300);
-  }
-
-  // Verify commit amended
+  // Wait for the commit list to actually be rebuilt with the amended
+  // commit
   CommitList *commitList = view->findChild<CommitList *>();
   QVERIFY(commitList);
   QAbstractItemModel *commitModel = commitList->model();
-  QModelIndex index = commitModel->index(0, 0);
-  QVERIFY(index.isValid());
-  auto commit = commitModel->data(index, CommitList::Role::CommitRole)
-                    .value<git::Commit>();
+
+  git::Commit commit;
+  {
+    auto timeout = Timeout(10000, "Commit list wasn't updated in time");
+    auto amended = [commitModel, &commit] {
+      QModelIndex index = commitModel->index(0, 0);
+      if (!index.isValid())
+        return false;
+      commit = commitModel->data(index, CommitList::Role::CommitRole)
+                   .value<git::Commit>();
+      return commit.isValid() &&
+             commit.message() == "Some other commit message";
+    };
+    while (!amended())
+      qWait(10);
+  }
+
+  // Verify commit amended
   QCOMPARE(commit.message(), QString("Some other commit message"));
 }
 
@@ -191,8 +198,18 @@ void TestInitRepo::editFile() {
   DiffView *diff = view->findChild<DiffView *>();
   QVERIFY(diff);
 
-  QToolButton *edit = diff->findChild<QToolButton *>("EditButton");
-  QVERIFY(edit);
+  // Amending replaces the commit object, so the diff view for the
+  // reselected commit is (re)loaded asynchronously. Wait for the actual
+  // resulting widget
+  QToolButton *edit = nullptr;
+  {
+    auto timeout = Timeout(10000, "Commit diff didn't load in time");
+    while (!edit) {
+      edit = diff->findChild<QToolButton *>("EditButton");
+      if (!edit)
+        qWait(10);
+    }
+  }
 
   // Set up timer to dismiss the popup.
   QTimer::singleShot(500, [] {

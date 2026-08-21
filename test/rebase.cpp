@@ -69,6 +69,21 @@
 
 using namespace git;
 
+namespace {
+
+// Polls the given condition instead of sleeping for a guessed duration, so
+// the wait resolves as soon as the awaited action actually completes. Aborts
+// hard if the condition is never met within timeoutMs, to avoid hanging CI.
+template <typename Predicate>
+void waitUntil(Predicate condition, const QString &message,
+              int timeoutMs = 5000) {
+  Test::Timeout timeout(timeoutMs, message);
+  while (!condition())
+    QTest::qWait(10);
+}
+
+} // namespace
+
 class TestRebase : public QObject {
   Q_OBJECT
 
@@ -88,14 +103,14 @@ private:
   git::Repository mRepo;
 };
 
-//###################################################################################################
-//###################################################################################################
-//###################################################################################################
-// Tests starting
-// ######################################################################################
-//###################################################################################################
-//###################################################################################################
-//###################################################################################################
+// ###################################################################################################
+// ###################################################################################################
+// ###################################################################################################
+//  Tests starting
+//  ######################################################################################
+// ###################################################################################################
+// ###################################################################################################
+// ###################################################################################################
 
 void TestRebase::withoutConflicts() {
   INIT_REPO("rebaseConflicts.zip");
@@ -234,7 +249,8 @@ void TestRebase::conflictingRebase() {
   // Checkout correct branch
   repoView->checkout(branch);
 
-  QTest::qWait(100);
+  waitUntil([repoView] { return !repoView->isLoading(); },
+           "Checkout did not finish loading in time");
 
   // Rebase on main
   git::Reference mainBranch = mRepo.lookupRef(QString("refs/heads/main"));
@@ -250,7 +266,12 @@ void TestRebase::conflictingRebase() {
   QCOMPARE(rebaseConflict, 1);
 
   // Check that buttons are visible
-  QTest::qWait(100);
+  waitUntil(
+      [continueRebaseButton, abortRebaseButton] {
+        return continueRebaseButton->isVisible() &&
+               abortRebaseButton->isVisible();
+      },
+      "Rebase buttons did not appear in time");
   QCOMPARE(continueRebaseButton->isVisible(), true);
   QCOMPARE(abortRebaseButton->isVisible(), true);
 
@@ -264,14 +285,17 @@ void TestRebase::conflictingRebase() {
           -1); // just write something to resolve the conflict
   f.close();
 
-  QTest::qWait(100);
+  waitUntil([repoView] { return !repoView->isLoading(); },
+           "Repository did not finish loading in time");
 
   refreshTriggered = 0;
   repoView->continueRebase();  // should fail
   QCOMPARE(rebaseConflict, 2); // User tries to continue without staging
   QCOMPARE(refreshTriggered, 1);
 
-  QTest::qWait(100); // Wait until refresh is done
+  // Wait until refresh is done
+  waitUntil([repoView] { return !repoView->isLoading(); },
+           "Refresh did not finish in time");
 
   // Staging the file
   auto filewidgets = repoView->findChildren<FileWidget *>();
@@ -296,9 +320,13 @@ void TestRebase::conflictingRebase() {
   // Check that rebase was really finished
   QCOMPARE(mRepo.rebaseOngoing(), false);
 
-  QTest::qWait(100); // Wait until refresh finished
-
   // Check that buttons are visible
+  waitUntil(
+      [continueRebaseButton, abortRebaseButton] {
+        return !continueRebaseButton->isVisible() &&
+               !abortRebaseButton->isVisible();
+      },
+      "Rebase buttons did not disappear in time");
   QCOMPARE(continueRebaseButton->isVisible(), false);
   QCOMPARE(abortRebaseButton->isVisible(), false);
 
@@ -331,7 +359,8 @@ void TestRebase::conflictingRebaseCustomMessage() {
   // Checkout correct branch
   repoView->checkout(branch);
 
-  QTest::qWait(100);
+  waitUntil([repoView] { return !repoView->isLoading(); },
+           "Checkout did not finish loading in time");
 
   // Rebase on main
   git::Reference mainBranch = mRepo.lookupRef(QString("refs/heads/main"));
@@ -343,7 +372,12 @@ void TestRebase::conflictingRebaseCustomMessage() {
   QCOMPARE(mRepo.rebaseOngoing(), true);
 
   // Check that buttons are visible
-  QTest::qWait(100);
+  waitUntil(
+      [continueRebaseButton, abortRebaseButton] {
+        return continueRebaseButton->isVisible() &&
+               abortRebaseButton->isVisible();
+      },
+      "Rebase buttons did not appear in time");
 
   // Resolve conflicts
   diff = mRepo.status(mRepo.index(), nullptr, false);
@@ -355,11 +389,14 @@ void TestRebase::conflictingRebaseCustomMessage() {
           -1); // just write something to resolve the conflict
   f.close();
 
-  QTest::qWait(100);
+  waitUntil([repoView] { return !repoView->isLoading(); },
+           "Repository did not finish loading in time");
 
   repoView->continueRebase(); // should fail
 
-  QTest::qWait(100); // Wait until refresh is done
+  // Wait until refresh is done
+  waitUntil([repoView] { return !repoView->isLoading(); },
+           "Refresh did not finish in time");
 
   // Staging the file
   auto filewidgets = repoView->findChildren<FileWidget *>();
@@ -385,9 +422,13 @@ void TestRebase::conflictingRebaseCustomMessage() {
   // Check that rebase was really finished
   QCOMPARE(mRepo.rebaseOngoing(), false);
 
-  QTest::qWait(100); // Wait until refresh finished
-
   // Check that buttons are visible
+  waitUntil(
+      [continueRebaseButton, abortRebaseButton] {
+        return !continueRebaseButton->isVisible() &&
+               !abortRebaseButton->isVisible();
+      },
+      "Rebase buttons did not disappear in time");
   QCOMPARE(continueRebaseButton->isVisible(), false);
   QCOMPARE(abortRebaseButton->isVisible(), false);
 }
@@ -756,7 +797,12 @@ void TestRebase::abortMR() {
   QCOMPARE(rebaseConflict, 1);
 
   // Check that buttons are visible
-  QTest::qWait(100);
+  waitUntil(
+      [continueRebaseButton, abortRebaseButton] {
+        return continueRebaseButton->isVisible() &&
+               abortRebaseButton->isVisible();
+      },
+      "Rebase buttons did not appear in time");
   QCOMPARE(continueRebaseButton->isVisible(), true);
   QCOMPARE(abortRebaseButton->isVisible(), true);
 
@@ -768,10 +814,13 @@ void TestRebase::abortMR() {
   // Check that rebase was really finished
   QCOMPARE(mRepo.rebaseOngoing(), false);
 
-  QTest::qWait(1000); // wait until detailview will be updated, after updating
-                      // status is finished
-
-  // Check that buttons are visible
+  // Wait until detailview will be updated, after updating status is finished
+  waitUntil(
+      [continueRebaseButton, abortRebaseButton] {
+        return !continueRebaseButton->isVisible() &&
+               !abortRebaseButton->isVisible();
+      },
+      "Rebase buttons did not disappear in time");
   QCOMPARE(continueRebaseButton->isVisible(), false);
   QCOMPARE(abortRebaseButton->isVisible(), false);
 
@@ -864,7 +913,12 @@ void TestRebase::commitDuringRebase() {
   QCOMPARE(rebaseConflict, 1);
 
   // Check that buttons are visible
-  QTest::qWait(100);
+  waitUntil(
+      [continueRebaseButton, abortRebaseButton] {
+        return continueRebaseButton->isVisible() &&
+               abortRebaseButton->isVisible();
+      },
+      "Rebase buttons did not appear in time");
   QCOMPARE(continueRebaseButton->isVisible(), true);
   QCOMPARE(abortRebaseButton->isVisible(), true);
 
@@ -913,7 +967,13 @@ void TestRebase::commitDuringRebase() {
   // Check that rebase was really finished
   QCOMPARE(mRepo.rebaseOngoing(), false);
 
-  QTest::qWait(10); // Wait until refresh is finished
+  // Wait until refresh is finished
+  waitUntil(
+      [continueRebaseButton, abortRebaseButton] {
+        return !continueRebaseButton->isVisible() &&
+               !abortRebaseButton->isVisible();
+      },
+      "Rebase buttons did not disappear in time");
 
   // Check that buttons are visible
   QCOMPARE(continueRebaseButton->isVisible(), false);

@@ -53,7 +53,7 @@ void TestReferenceList::test() {
   {
     auto timeout = Timeout(1000e3, "Failed to clone");
     while (!cloneFinished)
-      qWait(300);
+      qWait(10);
   }
   QVERIFY(view);
   git::Repository repo = view->repo();

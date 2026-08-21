@@ -11,6 +11,7 @@
 #include "Test.h"
 #include "ui/MainWindow.h"
 #include "ui/DetailView.h"
+#include "ui/DiffTreeModel.h"
 #include "ui/DiffView/DiffView.h"
 #include "ui/DoubleTreeWidget.h"
 #include "ui/RepoView.h"
@@ -186,12 +187,21 @@ void TestMerge::resolve() {
   auto files = doubleTree->findChild<TreeView *>("Unstaged");
   QVERIFY(files);
 
-  // Wait for refresh
+  // Wait for refresh. There is already a stale "test" item in the unstaged
+  // model from before the merge, and the conflicted file is also called
+  // "test", so name/count alone can't tell the two states apart. Wait for
+  // the model to actually report it as conflicted instead.
   QAbstractItemModel *model = files->model();
-  qWait(1000); // Because before the merge, there is already an item in the
-               // unstaged model
-  while (model->rowCount() < 1)
-    qWait(300);
+  {
+    auto timeout = Timeout(10000, "Merge conflict didn't refresh in time");
+    auto isConflicted = [model] {
+      return model->rowCount() == 1 &&
+             model->data(model->index(0, 0), DiffTreeModel::StatusRole)
+                     .toString() == "!";
+    };
+    while (!isConflicted())
+      qWait(10);
+  }
 
   files->selectionModel()->select(files->model()->index(0, 0),
                                   QItemSelectionModel::Select);
@@ -221,9 +231,12 @@ void TestMerge::resolve() {
 
   DetailView *detailView = view->findChild<DetailView *>();
   QPushButton *stageAll = nullptr;
-  while (stageAll == nullptr) {
-    stageAll = detailView->findChild<QPushButton *>("StageAll");
-    qWait(100);
+  {
+    auto timeout = Timeout(10000, "Stage All button didn't appear in time");
+    while (stageAll == nullptr) {
+      stageAll = detailView->findChild<QPushButton *>("StageAll");
+      qWait(10);
+    }
   }
   mouseClick(stageAll, Qt::LeftButton, Qt::KeyboardModifiers(), QPoint(),
              inputDelay);

@@ -160,8 +160,6 @@ void TestFileContextMenu::testDiscardSubmodule() {
   QVERIFY(button->isEnabled());
   emit button->clicked(true);
 
-  QTest::qWait(10); // Wait until submodule discarded
-
   // original text
   //  {"file.txt", "File.txt\n"},
   //  {"file2.txt", "file2.txt\n"},
@@ -175,6 +173,20 @@ void TestFileContextMenu::testDiscardSubmodule() {
     fileContentRef.insert("GittyupTestRepo/README.md",
                           "# GittyupTestRepo\nTest repo for Gittyup used in "
                           "the unittests\n"); // this submodule was discarded
+
+    // The submodule discard runs asynchronously. Wait for the resulting file
+    // content
+    const QString submoduleReadme = "GittyupTestRepo/README.md";
+    auto timeout = Test::Timeout(10000, "Submodule was not discarded in time");
+    QString content;
+    do {
+      QFile file(repo.workdir().filePath(submoduleReadme));
+      if (file.open(QIODevice::ReadOnly))
+        content = file.readAll();
+      if (content != fileContentRef.value(submoduleReadme))
+        QTest::qWait(10);
+    } while (content != fileContentRef.value(submoduleReadme));
+
     QHashIterator<QString, QString> i(fileContentRef);
     while (i.hasNext()) {
       i.next();
