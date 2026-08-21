@@ -232,6 +232,7 @@ public:
     connect(dialog, &QDialog::accepted, this,
             [this, dialog] { mRepo.addRemote(dialog->name(), dialog->url()); });
 
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
     dialog->open();
   }
 
