@@ -26,6 +26,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QStyleOptionToolButton>
+#include <QStylePainter>
 #include <QToolButton>
 #include <QWindow>
 #include <QtMath>
@@ -53,16 +54,6 @@ const QString kStyleSheet = "QToolButton {"
                             "  border-left: none;"
                             "  border-top-left-radius: 0px;"
                             "  border-bottom-left-radius: 0px"
-                            "}"
-                            "QToolButton::menu-indicator {"
-                            "  image: none"
-                            "}"
-                            "QToolButton::menu-button {"
-                            "  border: none;"
-                            "  width: 10px"
-                            "}"
-                            "QToolButton::menu-arrow {"
-                            "  image: none"
                             "}";
 
 void drawPopupChevron(qreal width, qreal height, QPainter &painter,
@@ -102,6 +93,15 @@ public:
   Button(QWidget *parent = nullptr) : QToolButton(parent) {}
 
   QSize sizeHint() const override { return QSize(kButtonWidth, kButtonHeight); }
+
+  void paintEvent(QPaintEvent *event) override {
+    QStylePainter sp(this);
+    QStyleOptionToolButton opt;
+    initStyleOption(&opt);
+    opt.features &= ~QStyleOptionToolButton::HasMenu;
+    opt.subControls &= ~QStyle::SC_ToolButtonMenu;
+    sp.drawComplexControl(QStyle::CC_ToolButton, opt);
+  }
 };
 
 class SidebarButton : public Button {
