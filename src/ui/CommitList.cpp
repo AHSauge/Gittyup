@@ -1316,6 +1316,8 @@ CommitList::CommitList(Index *index, QWidget *parent)
 
   connect(&mTimer, &QTimer::timeout, this, [this] {
     ++mProgress;
+    if (mLoadingFadein < 1.0f)
+      mLoadingFadein += 0.1;
     viewport()->update();
   });
 
@@ -1910,7 +1912,8 @@ void CommitList::paintEvent(QPaintEvent *event) {
     QRect indicator(QPoint(0, 0), ProgressIndicator::size());
     indicator.moveCenter(viewport()->rect().center());
     ProgressIndicator::paint(&painter, indicator,
-                             palette().color(QPalette::WindowText), mProgress);
+                             palette().color(QPalette::WindowText),
+                             mLoadingFadein, mProgress);
   }
 }
 
@@ -1920,6 +1923,7 @@ void CommitList::setLoading(bool loading) {
 
   mLoading = loading;
   if (loading) {
+    mLoadingFadein = 0;
     mProgress = 0;
     mTimer.start(50);
   } else {

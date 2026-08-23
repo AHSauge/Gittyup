@@ -105,6 +105,8 @@ DiffView::DiffView(const git::Repository &repo, QWidget *parent)
 
   connect(&mTimer, &QTimer::timeout, this, [this] {
     ++mProgress;
+    if (mLoadingFadein < 1.0f)
+      mLoadingFadein += 0.1;
     viewport()->update();
   });
 }
@@ -114,6 +116,7 @@ DiffView::~DiffView() {}
 void DiffView::setLoading(bool loading) {
   if (loading) {
     mProgress = 0;
+    mLoadingFadein = 0;
     mTimer.start(50);
   } else {
     mTimer.stop();
@@ -130,7 +133,8 @@ void DiffView::paintEvent(QPaintEvent *event) {
     QRect indicator(QPoint(0, 0), ProgressIndicator::size());
     indicator.moveCenter(viewport()->rect().center());
     ProgressIndicator::paint(&painter, indicator,
-                             palette().color(QPalette::WindowText), mProgress);
+                             palette().color(QPalette::WindowText),
+                             mLoadingFadein, mProgress);
   }
 }
 
@@ -454,8 +458,7 @@ void DiffView::fetchMore(int fetchWidgets) {
   }
   int count = indices.count();
 
-  for (int i = mFiles.count(); i < count && addedWidgets < fetchWidgets;
-        ++i) {
+  for (int i = mFiles.count(); i < count && addedWidgets < fetchWidgets; ++i) {
 
     int pidx = indices[i].data(DiffTreeModel::PatchIndexRole).toInt();
     git::Patch patch = mDiff.patch(pidx);
