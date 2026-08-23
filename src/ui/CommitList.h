@@ -128,6 +128,7 @@ private:
 
   // Whether the loading indicator should be shown
   bool mLoading{false};
+  float mLoadingFadein = 0;
   int mProgress{0};
   QTimer mTimer;
 

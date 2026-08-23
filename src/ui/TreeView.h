@@ -118,6 +118,7 @@ private:
   int mDelegateCol{false};
 
   bool mLoading{false};
+  float mLoadingFadein = 0;
   int mProgress{0};
   QTimer mTimer;
 };

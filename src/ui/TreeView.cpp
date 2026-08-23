@@ -52,6 +52,8 @@ TreeView::TreeView(QWidget *parent, const QString &name)
 
   connect(&mTimer, &QTimer::timeout, this, [this] {
     ++mProgress;
+    if (mLoadingFadein < 1.0f)
+      mLoadingFadein += 0.1;
     viewport()->update();
   });
 }
@@ -63,6 +65,7 @@ void TreeView::setLoading(bool loading) {
   mLoading = loading;
   if (loading) {
     mProgress = 0;
+    mLoadingFadein = 0;
     mTimer.start(50);
   } else {
     mTimer.stop();
@@ -79,7 +82,8 @@ void TreeView::paintEvent(QPaintEvent *event) {
     QRect indicator(QPoint(0, 0), ProgressIndicator::size());
     indicator.moveCenter(viewport()->rect().center());
     ProgressIndicator::paint(&painter, indicator,
-                             palette().color(QPalette::WindowText), mProgress);
+                             palette().color(QPalette::WindowText),
+                             mLoadingFadein, mProgress);
   }
 }
 
