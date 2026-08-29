@@ -19,6 +19,7 @@
 #include "dialogs/AccountDialog.h"
 #include "dialogs/CloneDialog.h"
 #include "host/Accounts.h"
+#include "util/Path.h"
 #include <QAbstractItemModel>
 #include <QFileDialog>
 #include <QMenu>
@@ -352,7 +353,8 @@ public:
                 return mTabs->tabText(row);
 
               RepoView *view = static_cast<RepoView *>(mTabs->widget(row));
-              return view->repo().dir(false).path();
+              // Resolve potentially sandboxed path
+              return util::sandboxPathToHost(view->repo().dir(false).path());
             }
 
             return tr("none");
@@ -361,7 +363,9 @@ public:
             RecentRepositories *recent = RecentRepositories::instance();
             if (recent->count()) {
               RecentRepository *repo = repos->repository(row);
-              return mShowFullPath ? repo->gitpath() : repo->name();
+              // Resolve potentially sandboxed path
+              return mShowFullPath ? util::sandboxPathToHost(repo->gitpath())
+                                   : repo->name();
             }
 
             return tr("none");
@@ -493,7 +497,8 @@ public:
           case Repo:
             if (mTabs->count()) {
               RepoView *view = static_cast<RepoView *>(mTabs->widget(row));
-              return view->repo().dir(false).path();
+              // Resolve potentially sandboxed path
+              return util::sandboxPathToHost(view->repo().dir(false).path());
             }
 
             return "";
@@ -502,7 +507,8 @@ public:
             RecentRepositories *recent = RecentRepositories::instance();
             if (recent->count()) {
               RecentRepository *repo = repos->repository(row);
-              return repo->gitpath();
+              // Resolve potentially sandboxed path
+              return util::sandboxPathToHost(repo->gitpath());
             }
 
             return "";
