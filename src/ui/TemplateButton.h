@@ -17,7 +17,6 @@ public:
 
   TemplateButton(QWidget *parent = nullptr);
   QMenu *menu() const;
-  void showMenu();
   void storeTemplates();
   QList<Template> loadTemplates();
   void updateMenu();

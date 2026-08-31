@@ -69,8 +69,6 @@ public:
   void setValue(const QString &key, const QString regexp, const QString &value);
   bool remove(const QString &key, const QString regexp);
 
-  int removeBackendEntries(const QString &key);
-
   Iterator glob(const QString &pattern) const;
 
   static Config global();
