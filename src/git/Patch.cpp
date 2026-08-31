@@ -168,27 +168,6 @@ Patch::LineStats Patch::lineStats() const {
   return stats;
 }
 
-QList<QString> Patch::print() const {
-  if (!this->d) {
-    // can occur, when the object is created with the default
-    // constructor.
-    // this is done for example in DiffView::fetchMore()
-    // git::Patch staged = mStagedPatches.value(patch.name());
-    // if no staged patch with this name is available, an empty
-    // patch is created
-    return QList<QString>();
-  }
-
-  int count = this->count();
-  if (!count)
-    return QList<QString>();
-
-  QBitArray hunks(count, true);
-  QByteArray array = apply(hunks);
-  QString str(array);
-  return str.split("\n");
-}
-
 int Patch::count() const {
   if (isConflicted())
     return mConflicts.size();
@@ -257,16 +236,6 @@ int Patch::lineNumber(int hidx, int ln, Diff::File file) const {
     return -1;
 
   return (file == Diff::NewFile) ? line->new_lineno : line->old_lineno;
-}
-
-git_off_t Patch::contentOffset(int hidx) const {
-  if (isConflicted())
-    return 0;
-
-  const git_diff_line *line = nullptr;
-  int result = git_patch_get_line_in_hunk(&line, d.get(), hidx,
-                                          0); // TODO: line index 0?
-  return (GIT_OK == result) ? line->content_offset : 0;
 }
 
 QByteArray Patch::lineContent(int hidx, int ln) const {
@@ -345,22 +314,6 @@ QByteArray Patch::generateResult(QList<QList<QByteArray>> &image,
   return filtered;
 }
 
-QByteArray Patch::apply(const QBitArray &hunks,
-                        const FilterList &filters) const {
-  QList<QList<QByteArray>> image;
-  populatePreimage(image);
-
-  // Apply hunks.
-  for (int i = 0; i < hunks.size(); ++i) {
-    if (!hunks.at(i))
-      continue; // ignore all hunks which should be discarded
-
-    apply(image, i, -1, -1);
-  }
-
-  return generateResult(image, filters);
-}
-
 QByteArray Patch::apply(int hidx, QByteArray &hunkData, QByteArray fileContent,
                         const FilterList &filters) const {
   QList<QList<QByteArray>> image;
@@ -397,58 +350,6 @@ void Patch::apply(QList<QList<QByteArray>> &image, int hidx,
   // multiple hunks
   image[start - 1].append(
       hunkData); // at least the line for the old_start must be available
-}
-
-void Patch::apply(QList<QList<QByteArray>> &image, int hidx, int start_line,
-                  int end_line) const {
-  if (start_line == -1 && end_line == -1) {
-    start_line = 0;
-    end_line = image.length();
-  } else if (start_line == -1 || end_line == -1)
-    return; // not valid that only one is -1
-
-  if (start_line > end_line || end_line > image.length())
-    return;
-
-  size_t lines = 0;
-  const git_diff_hunk *hunk = nullptr;
-  if (git_patch_get_hunk(&hunk, &lines, d.get(),
-                         hidx)) // returns hunk_idx hunk
-    return;
-
-  // FIXME: Incorrectly prepends when there are zero lines
-  // of context and there's an addition after the first line.
-  int index = hunk->old_start ? hunk->old_start - 1 : 0;
-  bool prepend = (index == 0);
-  for (int j = start_line; j < end_line; ++j) {
-    const git_diff_line *line = nullptr;
-    if (git_patch_get_line_in_hunk(&line, d.get(), hidx, j))
-      continue;
-
-    if (line->old_lineno > 0)
-      index = line->old_lineno - 1;
-
-    switch (line->origin) {
-      case GIT_DIFF_LINE_CONTEXT:
-        prepend = false;
-        break;
-
-      case GIT_DIFF_LINE_ADDITION: {
-        QByteArray text(line->content, line->content_len);
-        image[index].insert(prepend ? 0 : image.at(index).size(), text);
-        break;
-      }
-
-      case GIT_DIFF_LINE_DELETION:
-        image[index].clear();
-        prepend = false;
-        break;
-
-      default:
-        // no-op
-        break;
-    }
-  }
 }
 
 Patch Patch::fromBuffers(const QByteArray &oldBuffer,

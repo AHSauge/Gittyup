@@ -48,13 +48,6 @@ public:
   Blob blob(Diff::File file) const;
 
   LineStats lineStats() const;
-  /*!
-   * Returns the complete patch as a list of strings.
-   * Used for debugging
-   * \brief print
-   * \return
-   */
-  QList<QString> print() const;
 
   /*!
    * \brief count
@@ -87,7 +80,6 @@ public:
    */
   char lineOrigin(int hidx, int line) const;
   int lineNumber(int hidx, int line, Diff::File file = Diff::NewFile) const;
-  git_off_t contentOffset(int hidx) const;
 
   /*!
    * Returns the content of the line of hunk hidx and line line
@@ -116,15 +108,6 @@ public:
                                QByteArray fileContent);
   // Apply the given hunk indexes to the old buffer.
 
-  /*!
-   * Apply all changes and return the edited file as ByteArray
-   * \brief Patch::apply
-   * \param hunks
-   * \param filters
-   * \return edited file
-   */
-  QByteArray apply(const QBitArray &hunks,
-                   const FilterList &filters = FilterList()) const;
   QByteArray apply(int hidx, QByteArray &hunkData, QByteArray fileContent,
                    const FilterList &filters = FilterList()) const;
 
@@ -148,17 +131,6 @@ public:
   static void clearConflictResolutions(const Repository &repo);
 
 private:
-  /*!
-   * Applies changes to hunk and store result in image
-   * \brief Patch::apply
-   * \param image
-   * \param hunk_idx
-   * \param start_line
-   * \param end_line
-   */
-  void apply(QList<QList<QByteArray>> &image, int hidx, int start_line,
-             int end_line) const;
-
   struct ConflictHunk {
     int line; // start line
     int min;  // <<<<<<< line
